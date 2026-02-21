@@ -148,9 +148,7 @@ const MarkdownMessage = ({ message }) => {
 
   return (
     <Streamdown
-      allowedTags={Object.fromEntries(
-        elementNames.map((name) => [name, ["data-element-id"]]),
-      )}
+      allowedTags={Object.fromEntries(elementNames.map((name) => [name, ["data-element-id"]]))}
       components={components}
     >
       {processedText}

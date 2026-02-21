@@ -5,14 +5,14 @@
   "keywords": [
     "ai",
     "ai-sdk",
-    "vercel-ai-sdk",
-    "llm",
-    "streaming",
-    "react",
-    "streamdown",
     "elements",
+    "generative-ui",
+    "llm",
+    "react",
     "render-tools",
-    "generative-ui"
+    "streamdown",
+    "streaming",
+    "vercel-ai-sdk"
   ],
   "license": "MIT",
   "repository": {
