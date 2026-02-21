@@ -24,7 +24,7 @@ ${el.description}
 
 **Schema:**
 \`\`\`json
-${JSON.stringify(jsonSchema, null, 2)}
+${JSON.stringify(jsonSchema)}
 \`\`\``;
   });
 
