@@ -136,7 +136,7 @@ Use `useMarkdownElements` with [Streamdown](https://github.com/vercel/streamdown
 ```tsx
 import { Streamdown } from "streamdown";
 import "streamdown/styles.css";
-import { useMarkdownElements } from "ai-sdk-elements/react/markdown";
+import { useMarkdownElements } from "ai-sdk-elements/react/streamdown";
 
 const MarkdownMessage = ({ message }) => {
   const textPart = message.parts.find((p) => p.type === "text");

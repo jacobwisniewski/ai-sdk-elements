@@ -48,7 +48,7 @@
         "default": "./dist/react.cjs"
       }
     },
-    "./react/markdown": {
+    "./react/streamdown": {
       "import": {
         "types": "./dist/react-markdown.d.ts",
         "default": "./dist/react-markdown.js"

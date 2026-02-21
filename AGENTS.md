@@ -4,7 +4,7 @@ Reusable "render tools" pattern for Vercel AI SDK v5. LLMs emit `@name{...json..
 
 ## Structure
 
-Four subpath exports: `.` (core), `./server`, `./react`, `./react/markdown`. Source in `src/` mirrors this with `core/`, `server/`, `react/`, `react-markdown/` directories. Tests are co-located in `__tests__/`.
+Four subpath exports: `.` (core), `./server`, `./react`, `./react/streamdown`. Source in `src/` mirrors this with `core/`, `server/`, `react/`, `react-markdown/` directories. Tests are co-located in `__tests__/`.
 
 ## Code Style
 
