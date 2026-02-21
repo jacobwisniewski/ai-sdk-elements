@@ -50,8 +50,7 @@ const WMO_CODES: Record<number, string> = {
   99: "Thunderstorm with heavy hail",
 };
 
-const describeWeatherCode = (code: number): string =>
-  WMO_CODES[code] ?? "Unknown";
+const describeWeatherCode = (code: number): string => WMO_CODES[code] ?? "Unknown";
 
 const geocodeCity = async (city: string): Promise<GeocodingResult> => {
   const response = await fetch(

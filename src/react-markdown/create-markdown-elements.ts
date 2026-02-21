@@ -59,7 +59,8 @@ const createElementComponent =
     parts: UIMessage["parts"],
   ): FunctionComponent<Record<string, unknown>> =>
   (props: Record<string, unknown>) => {
-    const elementId = typeof props["data-element-id"] === "string" ? props["data-element-id"] : undefined;
+    const elementId =
+      typeof props["data-element-id"] === "string" ? props["data-element-id"] : undefined;
     if (!elementId) return null;
 
     const partData = findElementPart(parts, elementId);

@@ -39,7 +39,11 @@ describe("createElementStream", () => {
 
       const source = new ReadableStream<ElementUIMessageChunk>({
         start(controller) {
-          controller.enqueue({ type: "text-delta", delta: '@cite{"url":"https://example.com"}', id: "t1" });
+          controller.enqueue({
+            type: "text-delta",
+            delta: '@cite{"url":"https://example.com"}',
+            id: "t1",
+          });
           controller.close();
         },
       });
@@ -88,7 +92,11 @@ describe("createElementStream", () => {
 
       const source = new ReadableStream<ElementUIMessageChunk>({
         start(controller) {
-          controller.enqueue({ type: "text-delta", delta: '@cite{"url":"a.com"} then @cite{"url":"b.com"}', id: "t1" });
+          controller.enqueue({
+            type: "text-delta",
+            delta: '@cite{"url":"a.com"} then @cite{"url":"b.com"}',
+            id: "t1",
+          });
           controller.close();
         },
       });

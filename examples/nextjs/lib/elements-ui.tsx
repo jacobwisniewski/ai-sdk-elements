@@ -34,9 +34,7 @@ export const weatherElementUI = defineElementUI({
           <span className="block text-sm text-zinc-500">{data.condition}</span>
         </span>
         <span className="block text-right">
-          <span className="text-3xl font-bold text-zinc-900">
-            {data.temperature}°C
-          </span>
+          <span className="text-3xl font-bold text-zinc-900">{data.temperature}°C</span>
         </span>
       </span>
       <span className="mt-3 flex gap-4 border-t border-zinc-200/60 pt-3 text-xs text-zinc-500">

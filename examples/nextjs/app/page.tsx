@@ -10,9 +10,7 @@ import { useState } from "react";
 
 const getText = (parts: UIMessage["parts"]): string =>
   parts
-    .filter(
-      (p): p is Extract<typeof p, { type: "text" }> => p.type === "text",
-    )
+    .filter((p): p is Extract<typeof p, { type: "text" }> => p.type === "text")
     .map((p) => p.text)
     .join("");
 
@@ -46,7 +44,9 @@ const Message = ({
       <div className="max-w-[80%] rounded-2xl bg-zinc-100 px-4 py-2.5 text-zinc-900">
         <Streamdown
           isAnimating={isStreaming}
-          allowedTags={Object.fromEntries(elementNames.map((name) => [name, ["dataElementId", "dataElementState"]]))}
+          allowedTags={Object.fromEntries(
+            elementNames.map((name) => [name, ["dataElementId", "dataElementState"]]),
+          )}
           components={components}
         >
           {processedText}
@@ -67,12 +67,8 @@ export default function Page() {
   return (
     <div className="mx-auto flex h-dvh max-w-2xl flex-col">
       <header className="border-b border-zinc-200 px-4 py-3">
-        <h1 className="text-sm font-semibold text-zinc-900">
-          ai-sdk-elements demo
-        </h1>
-        <p className="text-xs text-zinc-500">
-          Ask about the weather in any city
-        </p>
+        <h1 className="text-sm font-semibold text-zinc-900">ai-sdk-elements demo</h1>
+        <p className="text-xs text-zinc-500">Ask about the weather in any city</p>
       </header>
 
       <div className="flex-1 space-y-4 overflow-y-auto p-4">
@@ -88,9 +84,7 @@ export default function Page() {
             key={message.id}
             role={message.role}
             parts={message.parts}
-            isStreaming={
-              isStreaming && index === messages.length - 1
-            }
+            isStreaming={isStreaming && index === messages.length - 1}
           />
         ))}
       </div>
