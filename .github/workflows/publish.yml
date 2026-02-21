@@ -6,7 +6,6 @@ on:
 
 permissions:
   contents: write
-  pull-requests: write
   id-token: write
 
 jobs:
@@ -37,11 +36,27 @@ jobs:
       - name: Type check
         run: pnpm type-check
 
-      - name: Create release PR or publish
-        uses: changesets/action@v1
-        with:
-          publish: pnpm release
-          title: "Version Packages"
-          commit: "chore: version packages"
+      - name: Check if version is published
+        id: check
+        run: |
+          LOCAL=$(node -p "require('./package.json').version")
+          REMOTE=$(npm view ai-sdk-elements version 2>/dev/null || echo "0.0.0")
+          if [ "$LOCAL" = "$REMOTE" ]; then
+            echo "should_publish=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_publish=true" >> "$GITHUB_OUTPUT"
+            echo "version=$LOCAL" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish to npm
+        if: steps.check.outputs.should_publish == 'true'
+        run: npm publish --provenance --access public
+
+      - name: Create GitHub release
+        if: steps.check.outputs.should_publish == 'true'
+        run: |
+          git tag "v${{ steps.check.outputs.version }}"
+          git push origin "v${{ steps.check.outputs.version }}"
+          gh release create "v${{ steps.check.outputs.version }}" --title "v${{ steps.check.outputs.version }}" --generate-notes
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
