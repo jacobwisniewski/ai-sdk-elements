@@ -4,19 +4,18 @@ import type { UIDataTypes, UIMessage, UIMessageChunk } from "ai";
 
 export interface ElementDefinition<
   TName extends string = string,
-  TInput extends z.ZodTypeAny = z.ZodTypeAny,
+  TInput extends z.ZodType = z.ZodType,
   TDeps = unknown,
 > {
   name: TName;
   description: string;
   schema: TInput;
-  example?: z.infer<TInput>;
   enrich: (input: z.infer<TInput>, deps: TDeps) => Promise<Record<string, unknown>>;
 }
 
 export interface ElementUIDefinition<
   TName extends string = string,
-  TData extends z.ZodTypeAny = z.ZodTypeAny,
+  TData extends z.ZodType = z.ZodType,
 > {
   name: TName;
   dataSchema: TData;
@@ -68,5 +67,5 @@ export type ElementUIMessage = UIMessage<unknown, ElementDataTypes>;
 
 export type ElementUIMessageChunk = UIMessageChunk<unknown, ElementDataTypes>;
 
-export type AnyElementDefinition = ElementDefinition<string, z.ZodTypeAny, unknown>;
-export type AnyElementUIDefinition = ElementUIDefinition<string, z.ZodTypeAny>;
+export type AnyElementDefinition = ElementDefinition<string, z.ZodType, unknown>;
+export type AnyElementUIDefinition = ElementUIDefinition<string, z.ZodType>;

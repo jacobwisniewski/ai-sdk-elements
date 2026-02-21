@@ -4,148 +4,130 @@ import { generateElementPrompt } from "../generate-prompt";
 import { defineElement } from "../define-element";
 
 describe("generateElementPrompt", () => {
-  describe("GIVEN a single element definition", () => {
-    it("SHOULD generate a prompt with header, description, fields, and example", () => {
-      const cite = defineElement({
-        name: "cite",
-        description: "Displays a citation with a link",
-        schema: z.object({
-          url: z.string().describe("The URL to cite"),
-          title: z.string().describe("Display title"),
-        }),
-        enrich: async (input) => input,
-      });
+  it("SHOULD return just the header WHEN given no elements", () => {
+    expect(generateElementPrompt([])).toMatchInlineSnapshot(`
+      "## Display Elements
 
-      const result = generateElementPrompt([cite]);
+      Output these markers to render rich UI components. Format: \`@name{...json...}\`
 
-      expect(result).toContain("## Display Elements");
-      expect(result).toContain("@name{...json...}");
-      expect(result).toContain("### cite");
-      expect(result).toContain("Displays a citation with a link");
-      expect(result).toContain("`url`: The URL to cite");
-      expect(result).toContain("`title`: Display title");
-      expect(result).toContain("@cite");
-    });
+      "
+    `);
   });
 
-  describe("GIVEN multiple element definitions", () => {
-    it("SHOULD generate sections for each element", () => {
-      const elements = [
-        defineElement({
-          name: "cite",
-          description: "Citation",
-          schema: z.object({ url: z.string() }),
-          enrich: async (input) => input,
-        }),
-        defineElement({
-          name: "map",
-          description: "Map display",
-          schema: z.object({ lat: z.number(), lng: z.number() }),
-          enrich: async (input) => input,
-        }),
-      ];
-
-      const result = generateElementPrompt(elements);
-
-      expect(result).toContain("### cite");
-      expect(result).toContain("### map");
-      expect(result).toContain("Citation");
-      expect(result).toContain("Map display");
+  it("SHOULD generate a section with description, format, and compact JSON Schema", () => {
+    const cite = defineElement({
+      name: "cite",
+      description: "Displays a citation with a link",
+      schema: z.object({
+        url: z.string().describe("The URL to cite"),
+        title: z.string().describe("Display title"),
+      }),
+      enrich: async (input) => input,
     });
+
+    expect(generateElementPrompt([cite])).toMatchInlineSnapshot(`
+      "## Display Elements
+
+      Output these markers to render rich UI components. Format: \`@name{...json...}\`
+
+      ### cite
+
+      Displays a citation with a link
+
+      **Format:** \`@cite{...}\`
+
+      **Schema:**
+      \`\`\`json
+      {"type":"object","properties":{"url":{"type":"string","description":"The URL to cite"},"title":{"type":"string","description":"Display title"}},"required":["url","title"]}
+      \`\`\`"
+    `);
   });
 
-  describe("GIVEN an element with a custom example", () => {
-    it("SHOULD use the custom example instead of auto-generated", () => {
-      const cite = defineElement({
+  it("SHOULD generate sections for multiple elements", () => {
+    const elements = [
+      defineElement({
         name: "cite",
         description: "Citation",
-        schema: z.object({ url: z.string(), label: z.string() }),
-        example: { url: "https://docs.example.com", label: "Documentation" },
+        schema: z.object({ url: z.string() }),
         enrich: async (input) => input,
-      });
+      }),
+      defineElement({
+        name: "map",
+        description: "Map display",
+        schema: z.object({ lat: z.number(), lng: z.number() }),
+        enrich: async (input) => input,
+      }),
+    ];
 
-      const result = generateElementPrompt([cite]);
+    expect(generateElementPrompt(elements)).toMatchInlineSnapshot(`
+      "## Display Elements
 
-      expect(result).toContain("https://docs.example.com");
-      expect(result).toContain("Documentation");
-    });
+      Output these markers to render rich UI components. Format: \`@name{...json...}\`
+
+      ### cite
+
+      Citation
+
+      **Format:** \`@cite{...}\`
+
+      **Schema:**
+      \`\`\`json
+      {"type":"object","properties":{"url":{"type":"string"}},"required":["url"]}
+      \`\`\`
+
+      ### map
+
+      Map display
+
+      **Format:** \`@map{...}\`
+
+      **Schema:**
+      \`\`\`json
+      {"type":"object","properties":{"lat":{"type":"number"},"lng":{"type":"number"}},"required":["lat","lng"]}
+      \`\`\`"
+    `);
   });
 
-  describe("GIVEN an element with optional fields", () => {
-    it("SHOULD mark optional fields in the output", () => {
-      const el = defineElement({
-        name: "card",
-        description: "Card display",
-        schema: z.object({
-          title: z.string(),
-          subtitle: z.optional(z.string()),
-        }),
-        enrich: async (input) => input,
-      });
-
-      const result = generateElementPrompt([el]);
-
-      expect(result).toContain("`title`");
-      expect(result).toContain("`subtitle`");
-      expect(result).toContain("(optional)");
+  it("SHOULD include enum values and constraints in JSON Schema", () => {
+    const el = defineElement({
+      name: "bounded",
+      description: "Bounded values",
+      schema: z.object({
+        level: z.enum(["info", "warn", "error"]),
+        name: z.string().min(1).max(100),
+      }),
+      enrich: async (input) => input,
     });
+
+    expect(generateElementPrompt([el])).toMatchInlineSnapshot(`
+      "## Display Elements
+
+      Output these markers to render rich UI components. Format: \`@name{...json...}\`
+
+      ### bounded
+
+      Bounded values
+
+      **Format:** \`@bounded{...}\`
+
+      **Schema:**
+      \`\`\`json
+      {"type":"object","properties":{"level":{"type":"string","enum":["info","warn","error"]},"name":{"type":"string","minLength":1,"maxLength":100}},"required":["level","name"]}
+      \`\`\`"
+    `);
   });
 
-  describe("GIVEN an element with enum fields", () => {
-    it("SHOULD auto-generate example using first enum value", () => {
-      const el = defineElement({
-        name: "status",
-        description: "Status badge",
-        schema: z.object({ level: z.enum(["info", "warn", "error"]) }),
-        enrich: async (input) => input,
-      });
-
-      const result = generateElementPrompt([el]);
-
-      expect(result).toContain('"info"');
+  it("SHOULD strip $schema and additionalProperties from output", () => {
+    const el = defineElement({
+      name: "test",
+      description: "Test",
+      schema: z.object({ a: z.string() }),
+      enrich: async (input) => input,
     });
-  });
 
-  describe("GIVEN an element with nested object schema", () => {
-    it("SHOULD auto-generate nested example", () => {
-      const el = defineElement({
-        name: "widget",
-        description: "Widget",
-        schema: z.object({
-          config: z.object({ zoom: z.number() }),
-        }),
-        enrich: async (input) => input,
-      });
+    const result = generateElementPrompt([el]);
 
-      const result = generateElementPrompt([el]);
-
-      expect(result).toContain("zoom");
-    });
-  });
-
-  describe("GIVEN an element with array schema", () => {
-    it("SHOULD auto-generate array example", () => {
-      const el = defineElement({
-        name: "list",
-        description: "List",
-        schema: z.object({
-          items: z.array(z.string()),
-        }),
-        enrich: async (input) => input,
-      });
-
-      const result = generateElementPrompt([el]);
-
-      expect(result).toContain('["example"]');
-    });
-  });
-
-  describe("GIVEN no elements", () => {
-    it("SHOULD return just the header", () => {
-      const result = generateElementPrompt([]);
-
-      expect(result).toContain("## Display Elements");
-      expect(result).not.toContain("###");
-    });
+    expect(result).not.toContain("$schema");
+    expect(result).not.toContain("additionalProperties");
   });
 });
