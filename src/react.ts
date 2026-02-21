@@ -1,9 +1,1 @@
-export { useElements } from "./react/use-elements";
-
-export type {
-  Segment,
-  TextSegment,
-  ElementSegment,
-  UseElementsOptions,
-  UseElementsReturn,
-} from "./react/types";
+export { useMarkdownElements } from "./react-markdown/create-markdown-elements";

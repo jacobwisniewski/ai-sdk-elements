@@ -23,7 +23,7 @@ const Message = ({
   parts: UIMessage["parts"];
   isStreaming: boolean;
 }) => {
-  const { processedText, components, elementNames } = useMarkdownElements({
+  const { processedText, components, elementNames, hasLoadingElements } = useMarkdownElements({
     text: getText(parts),
     parts,
     elements: elementUIs,
@@ -43,7 +43,7 @@ const Message = ({
     <div className="flex justify-start">
       <div className="max-w-[80%] rounded-2xl bg-zinc-100 px-4 py-2.5 text-zinc-900">
         <Streamdown
-          isAnimating={isStreaming}
+          isAnimating={isStreaming || hasLoadingElements}
           allowedTags={Object.fromEntries(
             elementNames.map((name) => [name, ["dataElementId", "dataElementState"]]),
           )}
