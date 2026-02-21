@@ -10,7 +10,7 @@ LLMs output `@name{...json...}` markers inline with text. The server parses thes
 npm install ai-sdk-elements ai zod react streamdown
 ```
 
-`ai` (v5+), `zod`, and `react` are peer dependencies.
+`ai` (v5+), `zod` (v4+), and `react` are peer dependencies.
 
 ## Quick Start
 

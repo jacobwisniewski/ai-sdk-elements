@@ -87,7 +87,9 @@ describe("generateElementPrompt", () => {
 
       expect(result).toContain("`title`");
       expect(result).toContain("`subtitle`");
-      expect(result).toContain("(optional)");
+      expect(result).toContain("optional");
+      expect(result).not.toMatch(/`title`[^`]*optional/);
+      expect(result).toMatch(/`subtitle`[^`]*optional/);
     });
   });
 
@@ -103,6 +105,22 @@ describe("generateElementPrompt", () => {
       const result = generateElementPrompt([el]);
 
       expect(result).toContain('"info"');
+    });
+
+    it("SHOULD list enum values in field description", () => {
+      const el = defineElement({
+        name: "status",
+        description: "Status badge",
+        schema: z.object({ level: z.enum(["info", "warn", "error"]) }),
+        enrich: async (input) => input,
+      });
+
+      const result = generateElementPrompt([el]);
+
+      expect(result).toContain('"info"');
+      expect(result).toContain('"warn"');
+      expect(result).toContain('"error"');
+      expect(result).toContain("one of:");
     });
   });
 
@@ -146,6 +164,48 @@ describe("generateElementPrompt", () => {
 
       expect(result).toContain("## Display Elements");
       expect(result).not.toContain("###");
+    });
+  });
+
+  describe("GIVEN an element with field types", () => {
+    it("SHOULD include type annotations for each field", () => {
+      const el = defineElement({
+        name: "profile",
+        description: "User profile",
+        schema: z.object({
+          name: z.string(),
+          age: z.number(),
+          active: z.boolean(),
+        }),
+        enrich: async (input) => input,
+      });
+
+      const result = generateElementPrompt([el]);
+
+      expect(result).toMatch(/`name`[^`]*string/);
+      expect(result).toMatch(/`age`[^`]*number/);
+      expect(result).toMatch(/`active`[^`]*boolean/);
+    });
+  });
+
+  describe("GIVEN an element with constraints", () => {
+    it("SHOULD include min/max constraints in field descriptions", () => {
+      const el = defineElement({
+        name: "bounded",
+        description: "Bounded values",
+        schema: z.object({
+          name: z.string().min(1).max(100),
+          score: z.number().min(0).max(10),
+        }),
+        enrich: async (input) => input,
+      });
+
+      const result = generateElementPrompt([el]);
+
+      expect(result).toMatch(/`name`.*minLength: 1/);
+      expect(result).toMatch(/`name`.*maxLength: 100/);
+      expect(result).toMatch(/`score`.*min: 0/);
+      expect(result).toMatch(/`score`.*max: 10/);
     });
   });
 });
