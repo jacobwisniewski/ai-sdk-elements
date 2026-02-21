@@ -1,5 +1,7 @@
 # ai-sdk-elements
 
+[![npm version](https://img.shields.io/npm/v/ai-sdk-elements)](https://www.npmjs.com/package/ai-sdk-elements)
+
 Rich UI elements for the [Vercel AI SDK](https://sdk.vercel.ai/). Define, enrich, and render structured content inline with LLM text.
 
 LLMs output `@name{...json...}` markers inline with text. The server parses these markers, enriches them with external data, and streams the results to the client. The client renders them as React components with loading, error, and ready states.
