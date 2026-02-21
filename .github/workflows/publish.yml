@@ -24,6 +24,8 @@ jobs:
           cache: pnpm
           registry-url: https://registry.npmjs.org
 
+      - run: npm install -g npm@latest
+
       - run: pnpm install --frozen-lockfile
 
       - name: Build
@@ -43,4 +45,3 @@ jobs:
           commit: "chore: version packages"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
