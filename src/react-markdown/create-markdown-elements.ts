@@ -12,7 +12,7 @@ interface UseMarkdownElementsOptions {
 
 interface UseMarkdownElementsReturn {
   readonly processedText: string;
-  readonly components: Readonly<Record<string, FunctionComponent<Record<string, string>>>>;
+  readonly components: Record<string, FunctionComponent<Record<string, unknown>>>;
   readonly elementNames: ReadonlyArray<string>;
 }
 
@@ -57,9 +57,9 @@ const createElementComponent =
   (
     elementDef: AnyElementUIDefinition,
     parts: UIMessage["parts"],
-  ): FunctionComponent<Record<string, string>> =>
-  (props: Record<string, string>) => {
-    const elementId = props["data-element-id"];
+  ): FunctionComponent<Record<string, unknown>> =>
+  (props: Record<string, unknown>) => {
+    const elementId = typeof props["data-element-id"] === "string" ? props["data-element-id"] : undefined;
     if (!elementId) return null;
 
     const partData = findElementPart(parts, elementId);
@@ -79,7 +79,7 @@ const createElementComponent =
 const buildComponents = (
   elements: ReadonlyArray<AnyElementUIDefinition>,
   parts: UIMessage["parts"],
-): Readonly<Record<string, FunctionComponent<Record<string, string>>>> =>
+): Record<string, FunctionComponent<Record<string, unknown>>> =>
   Object.fromEntries(
     elements.map((elementDef) => [elementDef.name, createElementComponent(elementDef, parts)]),
   );

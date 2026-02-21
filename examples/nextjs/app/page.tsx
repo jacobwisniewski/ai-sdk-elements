@@ -3,7 +3,7 @@
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { useMarkdownElements } from "ai-sdk-elements/react/streamdown";
-import { Streamdown, type Components } from "streamdown";
+import { Streamdown } from "streamdown";
 import "streamdown/styles.css";
 import { elementUIs } from "@/lib/elements-ui";
 import { useState } from "react";
@@ -47,7 +47,7 @@ const Message = ({
         <Streamdown
           isAnimating={isStreaming}
           allowedTags={Object.fromEntries(elementNames.map((name) => [name, ["dataElementId", "dataElementState"]]))}
-          components={components as Components}
+          components={components}
         >
           {processedText}
         </Streamdown>

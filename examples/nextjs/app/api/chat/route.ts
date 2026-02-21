@@ -18,7 +18,7 @@ export const POST = async (req: Request) => {
   const stream = createUIMessageStream({
     execute: ({ writer }) => {
       const result = streamText({
-        model: openai("gpt-4o-mini"),
+        model: openai("gpt-5-mini-2025-08-07"),
         system: [
           "You are a helpful weather assistant.",
           "When a user asks about the weather in a city, use the weather element to display it.",
