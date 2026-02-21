@@ -165,24 +165,6 @@ const MarkdownMessage = ({ message }) => {
 - `components` — a record mapping element names to React components (pass directly to Streamdown)
 - `elementNames` — deduplicated list of element names found in the text (use with `allowedTags` to whitelist them through Streamdown's sanitizer)
 
-## Types
-
-The package is strongly typed to AI SDK v5. Key types:
-
-```ts
-// Extends AI SDK's UIDataTypes with a custom "element" data part
-interface ElementDataTypes extends UIDataTypes {
-  element: ElementPartData;
-}
-
-// Typed AI SDK message and chunk types
-type ElementUIMessage = UIMessage<unknown, ElementDataTypes>;
-type ElementUIMessageChunk = UIMessageChunk<unknown, ElementDataTypes>;
-
-// Element data part states (discriminated union)
-type ElementPartData = ElementPartLoading | ElementPartReady | ElementPartError;
-```
-
 ## License
 
 MIT
