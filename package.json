@@ -4,31 +4,51 @@
   "description": "Rich UI elements for the Vercel AI SDK. Define, enrich, and render structured content inline with LLM text.",
   "license": "MIT",
   "type": "module",
-  "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "sideEffects": false,
   "exports": {
     "./package.json": "./package.json",
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.js"
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
     },
     "./server": {
-      "types": "./dist/server.d.ts",
-      "import": "./dist/server.mjs",
-      "require": "./dist/server.js"
+      "import": {
+        "types": "./dist/server.d.ts",
+        "default": "./dist/server.js"
+      },
+      "require": {
+        "types": "./dist/server.d.cts",
+        "default": "./dist/server.cjs"
+      }
     },
     "./react": {
-      "types": "./dist/react.d.ts",
-      "import": "./dist/react.mjs",
-      "require": "./dist/react.js"
+      "import": {
+        "types": "./dist/react.d.ts",
+        "default": "./dist/react.js"
+      },
+      "require": {
+        "types": "./dist/react.d.cts",
+        "default": "./dist/react.cjs"
+      }
     },
     "./react/markdown": {
-      "types": "./dist/react-markdown.d.ts",
-      "import": "./dist/react-markdown.mjs",
-      "require": "./dist/react-markdown.js"
+      "import": {
+        "types": "./dist/react-markdown.d.ts",
+        "default": "./dist/react-markdown.js"
+      },
+      "require": {
+        "types": "./dist/react-markdown.d.cts",
+        "default": "./dist/react-markdown.cjs"
+      }
     }
   },
   "files": [
@@ -70,5 +90,5 @@
   "engines": {
     "node": ">=18"
   },
-  "packageManager": "pnpm@7.18.0+sha512.8a06510748a9f1c9fd7f5825633b0f4c96e5c50722758eff7d27c9fbe8fa1982d3d29a889628ec756f5923859a6b1862db6482e076477b9bcc8926b620aa08a0"
+  "packageManager": "pnpm@9.15.9"
 }
