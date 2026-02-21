@@ -238,4 +238,218 @@ describe("useElements", () => {
       });
     });
   });
+
+  describe("GIVEN element state transitions", () => {
+    it("SHOULD update segment state from loading to ready on rerender", () => {
+      const text = '@cite{"url":"https://x.com"}';
+      const loadingParts: UIMessage["parts"] = [
+        makeDataPart("el-0", {
+          name: "cite",
+          input: { url: "https://x.com" },
+          state: "loading",
+        }),
+      ];
+
+      const { result, rerender } = renderHook(
+        ({ parts }) => useElements({ text, parts, elements: [citeUI] }),
+        { initialProps: { parts: loadingParts } },
+      );
+
+      expect(result.current.segments[0]).toMatchObject({ type: "element", state: "loading" });
+
+      const readyParts: UIMessage["parts"] = [
+        makeDataPart("el-0", {
+          name: "cite",
+          input: { url: "https://x.com" },
+          state: "ready",
+          data: { title: "Example", url: "https://x.com" },
+        }),
+      ];
+
+      rerender({ parts: readyParts });
+
+      expect(result.current.segments[0]).toMatchObject({ type: "element", state: "ready" });
+    });
+
+    it("SHOULD switch render output from loading to ready component", () => {
+      const text = '@cite{"url":"https://x.com"}';
+      const loadingParts: UIMessage["parts"] = [
+        makeDataPart("el-0", {
+          name: "cite",
+          input: { url: "https://x.com" },
+          state: "loading",
+        }),
+      ];
+
+      const { result, rerender } = renderHook(
+        ({ parts }) => useElements({ text, parts, elements: [citeUI] }),
+        { initialProps: { parts: loadingParts } },
+      );
+
+      const loadingRendered = (result.current.segments[0] as { render: () => unknown }).render();
+      expect(loadingRendered).toMatchInlineSnapshot(`
+        <span>
+          Loading citation...
+        </span>
+      `);
+
+      const readyParts: UIMessage["parts"] = [
+        makeDataPart("el-0", {
+          name: "cite",
+          input: { url: "https://x.com" },
+          state: "ready",
+          data: { title: "Example", url: "https://x.com" },
+        }),
+      ];
+
+      rerender({ parts: readyParts });
+
+      const readyRendered = (result.current.segments[0] as { render: () => unknown }).render();
+      expect(readyRendered).toMatchInlineSnapshot(`
+        <a
+          href="https://x.com"
+        >
+          Example
+        </a>
+      `);
+    });
+
+    it("SHOULD update segment state from loading to error on rerender", () => {
+      const text = '@cite{"url":"https://x.com"}';
+      const loadingParts: UIMessage["parts"] = [
+        makeDataPart("el-0", {
+          name: "cite",
+          input: { url: "https://x.com" },
+          state: "loading",
+        }),
+      ];
+
+      const { result, rerender } = renderHook(
+        ({ parts }) => useElements({ text, parts, elements: [citeUI] }),
+        { initialProps: { parts: loadingParts } },
+      );
+
+      expect(result.current.segments[0]).toMatchObject({ type: "element", state: "loading" });
+
+      const errorParts: UIMessage["parts"] = [
+        makeDataPart("el-0", {
+          name: "cite",
+          input: { url: "https://x.com" },
+          state: "error",
+          error: "Not found",
+        }),
+      ];
+
+      rerender({ parts: errorParts });
+
+      expect(result.current.segments[0]).toMatchObject({ type: "element", state: "error" });
+      const rendered = (result.current.segments[0] as { render: () => unknown }).render();
+      expect(rendered).toMatchInlineSnapshot(`
+        <span
+          className="error"
+        >
+          Not found
+        </span>
+      `);
+    });
+
+    it("SHOULD transition multiple elements independently", () => {
+      const text = '@cite{"url":"a.com"} and @cite{"url":"b.com"}';
+      const bothLoadingParts: UIMessage["parts"] = [
+        makeDataPart("el-0", {
+          name: "cite",
+          input: { url: "a.com" },
+          state: "loading",
+        }),
+        makeDataPart("el-1", {
+          name: "cite",
+          input: { url: "b.com" },
+          state: "loading",
+        }),
+      ];
+
+      const { result, rerender } = renderHook(
+        ({ parts }) => useElements({ text, parts, elements: [citeUI] }),
+        { initialProps: { parts: bothLoadingParts } },
+      );
+
+      expect(result.current.segments[0]).toMatchObject({ state: "loading" });
+      expect(result.current.segments[2]).toMatchObject({ state: "loading" });
+
+      const firstReadyParts: UIMessage["parts"] = [
+        makeDataPart("el-0", {
+          name: "cite",
+          input: { url: "a.com" },
+          state: "ready",
+          data: { title: "A", url: "a.com" },
+        }),
+        makeDataPart("el-1", {
+          name: "cite",
+          input: { url: "b.com" },
+          state: "loading",
+        }),
+      ];
+
+      rerender({ parts: firstReadyParts });
+
+      expect(result.current.segments[0]).toMatchObject({ state: "ready" });
+      expect(result.current.segments[2]).toMatchObject({ state: "loading" });
+
+      const bothReadyParts: UIMessage["parts"] = [
+        makeDataPart("el-0", {
+          name: "cite",
+          input: { url: "a.com" },
+          state: "ready",
+          data: { title: "A", url: "a.com" },
+        }),
+        makeDataPart("el-1", {
+          name: "cite",
+          input: { url: "b.com" },
+          state: "ready",
+          data: { title: "B", url: "b.com" },
+        }),
+      ];
+
+      rerender({ parts: bothReadyParts });
+
+      expect(result.current.segments[0]).toMatchObject({ state: "ready" });
+      expect(result.current.segments[2]).toMatchObject({ state: "ready" });
+    });
+
+    it("SHOULD handle no parts transitioning to loading then ready", () => {
+      const text = '@cite{"url":"https://x.com"}';
+
+      const { result, rerender } = renderHook(
+        ({ parts }) => useElements({ text, parts, elements: [citeUI] }),
+        { initialProps: { parts: [] as UIMessage["parts"] } },
+      );
+
+      expect(result.current.segments[0]).toMatchObject({ state: "loading" });
+
+      const loadingParts: UIMessage["parts"] = [
+        makeDataPart("el-0", {
+          name: "cite",
+          input: { url: "https://x.com" },
+          state: "loading",
+        }),
+      ];
+
+      rerender({ parts: loadingParts });
+
+      expect(result.current.segments[0]).toMatchObject({ state: "loading" });
+
+      const readyParts: UIMessage["parts"] = [
+        makeDataPart("el-0", {
+          name: "cite",
+          input: { url: "https://x.com" },
+          state: "ready",
+          data: { title: "Example", url: "https://x.com" },
+        }),
+      ];
+
+      rerender({ parts: readyParts });
+
+      expect(result.current.segments[0]).toMatchObject({ state: "ready" });
+    });
+  });
 });

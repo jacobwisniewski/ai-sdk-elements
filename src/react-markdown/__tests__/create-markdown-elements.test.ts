@@ -220,5 +220,197 @@ describe("useMarkdownElements", () => {
 
       expect(result.current.processedText).toContain('data-element-state="ready"');
     });
+
+    it("SHOULD switch component render output from loading to ready", () => {
+      const text = '@cite{"url":"https://x.com"}';
+      const loadingParts: UIMessage["parts"] = [
+        makeDataPart("el-0", {
+          name: "cite",
+          input: { url: "https://x.com" },
+          state: "loading",
+        }),
+      ];
+
+      const { result, rerender } = renderHook(
+        ({ parts }) => useMarkdownElements({ text, parts, elements: [citeUI] }),
+        { initialProps: { parts: loadingParts } },
+      );
+
+      const loadingRendered = result.current.components.cite({ "data-element-id": "el-0" });
+      expect(loadingRendered).toMatchInlineSnapshot(`
+        <span>
+          Loading...
+        </span>
+      `);
+
+      const readyParts: UIMessage["parts"] = [
+        makeDataPart("el-0", {
+          name: "cite",
+          input: { url: "https://x.com" },
+          state: "ready",
+          data: { title: "Example", url: "https://x.com" },
+        }),
+      ];
+
+      rerender({ parts: readyParts });
+
+      const readyRendered = result.current.components.cite({ "data-element-id": "el-0" });
+      expect(readyRendered).toMatchInlineSnapshot(`
+        <a
+          href="https://x.com"
+        >
+          Example
+        </a>
+      `);
+    });
+
+    it("SHOULD change processedText when part transitions from loading to error", () => {
+      const text = '@cite{"url":"https://x.com"}';
+      const loadingParts: UIMessage["parts"] = [
+        makeDataPart("el-0", {
+          name: "cite",
+          input: { url: "https://x.com" },
+          state: "loading",
+        }),
+      ];
+
+      const { result, rerender } = renderHook(
+        ({ parts }) => useMarkdownElements({ text, parts, elements: [citeUI] }),
+        { initialProps: { parts: loadingParts } },
+      );
+
+      expect(result.current.processedText).toContain('data-element-state="loading"');
+
+      const errorParts: UIMessage["parts"] = [
+        makeDataPart("el-0", {
+          name: "cite",
+          input: { url: "https://x.com" },
+          state: "error",
+          error: "Not found",
+        }),
+      ];
+
+      rerender({ parts: errorParts });
+
+      expect(result.current.processedText).toContain('data-element-state="error"');
+      const rendered = result.current.components.cite({ "data-element-id": "el-0" });
+      expect(rendered).toMatchInlineSnapshot(`
+        <span
+          className="error"
+        >
+          Not found
+        </span>
+      `);
+    });
+
+    it("SHOULD transition multiple elements independently", () => {
+      const text = '@cite{"url":"a.com"} then @cite{"url":"b.com"}';
+      const bothLoadingParts: UIMessage["parts"] = [
+        makeDataPart("el-0", {
+          name: "cite",
+          input: { url: "a.com" },
+          state: "loading",
+        }),
+        makeDataPart("el-1", {
+          name: "cite",
+          input: { url: "b.com" },
+          state: "loading",
+        }),
+      ];
+
+      const { result, rerender } = renderHook(
+        ({ parts }) => useMarkdownElements({ text, parts, elements: [citeUI] }),
+        { initialProps: { parts: bothLoadingParts } },
+      );
+
+      expect(result.current.processedText).toBe(
+        '<cite data-element-id="el-0" data-element-state="loading"></cite> then <cite data-element-id="el-1" data-element-state="loading"></cite>',
+      );
+
+      const firstReadyParts: UIMessage["parts"] = [
+        makeDataPart("el-0", {
+          name: "cite",
+          input: { url: "a.com" },
+          state: "ready",
+          data: { title: "A", url: "a.com" },
+        }),
+        makeDataPart("el-1", {
+          name: "cite",
+          input: { url: "b.com" },
+          state: "loading",
+        }),
+      ];
+
+      rerender({ parts: firstReadyParts });
+
+      expect(result.current.processedText).toBe(
+        '<cite data-element-id="el-0" data-element-state="ready"></cite> then <cite data-element-id="el-1" data-element-state="loading"></cite>',
+      );
+
+      const bothReadyParts: UIMessage["parts"] = [
+        makeDataPart("el-0", {
+          name: "cite",
+          input: { url: "a.com" },
+          state: "ready",
+          data: { title: "A", url: "a.com" },
+        }),
+        makeDataPart("el-1", {
+          name: "cite",
+          input: { url: "b.com" },
+          state: "ready",
+          data: { title: "B", url: "b.com" },
+        }),
+      ];
+
+      rerender({ parts: bothReadyParts });
+
+      expect(result.current.processedText).toBe(
+        '<cite data-element-id="el-0" data-element-state="ready"></cite> then <cite data-element-id="el-1" data-element-state="ready"></cite>',
+      );
+    });
+
+    it("SHOULD handle no parts transitioning to loading then ready", () => {
+      const text = '@cite{"url":"https://x.com"}';
+
+      const { result, rerender } = renderHook(
+        ({ parts }) => useMarkdownElements({ text, parts, elements: [citeUI] }),
+        { initialProps: { parts: [] as UIMessage["parts"] } },
+      );
+
+      expect(result.current.processedText).toContain('data-element-state="loading"');
+
+      const loadingParts: UIMessage["parts"] = [
+        makeDataPart("el-0", {
+          name: "cite",
+          input: { url: "https://x.com" },
+          state: "loading",
+        }),
+      ];
+
+      rerender({ parts: loadingParts });
+
+      expect(result.current.processedText).toContain('data-element-state="loading"');
+
+      const readyParts: UIMessage["parts"] = [
+        makeDataPart("el-0", {
+          name: "cite",
+          input: { url: "https://x.com" },
+          state: "ready",
+          data: { title: "Example", url: "https://x.com" },
+        }),
+      ];
+
+      rerender({ parts: readyParts });
+
+      expect(result.current.processedText).toContain('data-element-state="ready"');
+      const rendered = result.current.components.cite({ "data-element-id": "el-0" });
+      expect(rendered).toMatchInlineSnapshot(`
+        <a
+          href="https://x.com"
+        >
+          Example
+        </a>
+      `);
+    });
   });
 });
