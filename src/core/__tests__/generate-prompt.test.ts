@@ -8,7 +8,9 @@ describe("generateElementPrompt", () => {
     expect(generateElementPrompt([])).toMatchInlineSnapshot(`
       "## Display Elements
 
-      Output these markers to render rich UI components. Format: \`@name{...json...}\`
+      Embed these markers in your response to render rich UI components for the user. Format: \`@name{...json...}\`
+
+      When you include a marker, the input you provide is enriched server-side (e.g. API calls, database lookups) and the result is rendered as a visual UI component that the user sees inline in your response.
 
       "
     `);
@@ -28,15 +30,15 @@ describe("generateElementPrompt", () => {
     expect(generateElementPrompt([cite])).toMatchInlineSnapshot(`
       "## Display Elements
 
-      Output these markers to render rich UI components. Format: \`@name{...json...}\`
+      Embed these markers in your response to render rich UI components for the user. Format: \`@name{...json...}\`
+
+      When you include a marker, the input you provide is enriched server-side (e.g. API calls, database lookups) and the result is rendered as a visual UI component that the user sees inline in your response.
 
       ### cite
 
       Displays a citation with a link
 
-      **Format:** \`@cite{...}\`
-
-      **Schema:**
+      **Input:** \`@cite{...}\`
       \`\`\`json
       {"type":"object","properties":{"url":{"type":"string","description":"The URL to cite"},"title":{"type":"string","description":"Display title"}},"required":["url","title"]}
       \`\`\`"
@@ -62,15 +64,15 @@ describe("generateElementPrompt", () => {
     expect(generateElementPrompt(elements)).toMatchInlineSnapshot(`
       "## Display Elements
 
-      Output these markers to render rich UI components. Format: \`@name{...json...}\`
+      Embed these markers in your response to render rich UI components for the user. Format: \`@name{...json...}\`
+
+      When you include a marker, the input you provide is enriched server-side (e.g. API calls, database lookups) and the result is rendered as a visual UI component that the user sees inline in your response.
 
       ### cite
 
       Citation
 
-      **Format:** \`@cite{...}\`
-
-      **Schema:**
+      **Input:** \`@cite{...}\`
       \`\`\`json
       {"type":"object","properties":{"url":{"type":"string"}},"required":["url"]}
       \`\`\`
@@ -79,9 +81,7 @@ describe("generateElementPrompt", () => {
 
       Map display
 
-      **Format:** \`@map{...}\`
-
-      **Schema:**
+      **Input:** \`@map{...}\`
       \`\`\`json
       {"type":"object","properties":{"lat":{"type":"number"},"lng":{"type":"number"}},"required":["lat","lng"]}
       \`\`\`"
@@ -102,15 +102,15 @@ describe("generateElementPrompt", () => {
     expect(generateElementPrompt([el])).toMatchInlineSnapshot(`
       "## Display Elements
 
-      Output these markers to render rich UI components. Format: \`@name{...json...}\`
+      Embed these markers in your response to render rich UI components for the user. Format: \`@name{...json...}\`
+
+      When you include a marker, the input you provide is enriched server-side (e.g. API calls, database lookups) and the result is rendered as a visual UI component that the user sees inline in your response.
 
       ### bounded
 
       Bounded values
 
-      **Format:** \`@bounded{...}\`
-
-      **Schema:**
+      **Input:** \`@bounded{...}\`
       \`\`\`json
       {"type":"object","properties":{"level":{"type":"string","enum":["info","warn","error"]},"name":{"type":"string","minLength":1,"maxLength":100}},"required":["level","name"]}
       \`\`\`"
@@ -131,7 +131,7 @@ describe("generateElementPrompt", () => {
     expect(result).not.toContain("additionalProperties");
   });
 
-  it("SHOULD include a Renders section WHEN outputSchema is provided", () => {
+  it("SHOULD include a 'The user will see' section WHEN outputSchema is provided", () => {
     const el = defineElement({
       name: "weather",
       description: "Display current weather",
@@ -146,27 +146,27 @@ describe("generateElementPrompt", () => {
     expect(generateElementPrompt([el])).toMatchInlineSnapshot(`
       "## Display Elements
 
-      Output these markers to render rich UI components. Format: \`@name{...json...}\`
+      Embed these markers in your response to render rich UI components for the user. Format: \`@name{...json...}\`
+
+      When you include a marker, the input you provide is enriched server-side (e.g. API calls, database lookups) and the result is rendered as a visual UI component that the user sees inline in your response.
 
       ### weather
 
       Display current weather
 
-      **Format:** \`@weather{...}\`
-
-      **Schema:**
+      **Input:** \`@weather{...}\`
       \`\`\`json
       {"type":"object","properties":{"city":{"type":"string"}},"required":["city"]}
       \`\`\`
 
-      **Renders:**
+      **The user will see:**
       \`\`\`json
       {"type":"object","properties":{"temperature":{"type":"number"},"condition":{"type":"string"}},"required":["temperature","condition"]}
       \`\`\`"
     `);
   });
 
-  it("SHOULD NOT include a Renders section WHEN outputSchema is omitted", () => {
+  it("SHOULD NOT include a 'The user will see' section WHEN outputSchema is omitted", () => {
     const el = defineElement({
       name: "cite",
       description: "Citation",
@@ -175,7 +175,7 @@ describe("generateElementPrompt", () => {
     });
 
     const result = generateElementPrompt([el]);
-    expect(result).not.toContain("Renders");
+    expect(result).not.toContain("The user will see");
   });
 
   it("SHOULD strip $schema and additionalProperties from outputSchema", () => {

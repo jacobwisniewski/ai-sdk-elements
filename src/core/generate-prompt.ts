@@ -9,7 +9,9 @@ const stripNoise = (schema: Record<string, unknown>): Record<string, unknown> =>
 export const generateElementPrompt = (elements: ReadonlyArray<AnyElementDefinition>): string => {
   const header = `## Display Elements
 
-Output these markers to render rich UI components. Format: \`@name{...json...}\`
+Embed these markers in your response to render rich UI components for the user. Format: \`@name{...json...}\`
+
+When you include a marker, the input you provide is enriched server-side (e.g. API calls, database lookups) and the result is rendered as a visual UI component that the user sees inline in your response.
 
 `;
 
@@ -19,7 +21,7 @@ Output these markers to render rich UI components. Format: \`@name{...json...}\`
     const outputSection = el.outputSchema
       ? `
 
-**Renders:**
+**The user will see:**
 \`\`\`json
 ${JSON.stringify(stripNoise(z.toJSONSchema(el.outputSchema)))}
 \`\`\``
@@ -29,9 +31,7 @@ ${JSON.stringify(stripNoise(z.toJSONSchema(el.outputSchema)))}
 
 ${el.description}
 
-**Format:** \`@${el.name}{...}\`
-
-**Schema:**
+**Input:** \`@${el.name}{...}\`
 \`\`\`json
 ${JSON.stringify(jsonSchema)}
 \`\`\`${outputSection}`;
