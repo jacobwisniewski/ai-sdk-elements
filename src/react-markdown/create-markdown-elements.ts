@@ -36,10 +36,20 @@ const findElementPart = (
   return part?.data;
 };
 
-const replaceMarkersWithHtml = (text: string, markers: ReadonlyArray<MarkerMatch>): string =>
+const getElementState = (parts: UIMessage["parts"], elementId: string): string => {
+  const partData = findElementPart(parts, elementId);
+  return partData?.state ?? "loading";
+};
+
+const replaceMarkersWithHtml = (
+  text: string,
+  markers: ReadonlyArray<MarkerMatch>,
+  parts: UIMessage["parts"],
+): string =>
   markers.reduceRight((acc, marker, index) => {
     const elementId = `el-${index}`;
-    const htmlTag = `<${marker.name} data-element-id="${elementId}"></${marker.name}>`;
+    const state = getElementState(parts, elementId);
+    const htmlTag = `<${marker.name} data-element-id="${elementId}" data-element-state="${state}"></${marker.name}>`;
     return acc.slice(0, marker.start) + htmlTag + acc.slice(marker.end);
   }, text);
 
@@ -88,7 +98,7 @@ export const useMarkdownElements = (
     }
 
     return {
-      processedText: replaceMarkersWithHtml(text, markers),
+      processedText: replaceMarkersWithHtml(text, markers, parts),
       components: buildComponents(elements, parts),
       elementNames,
     };

@@ -23,6 +23,8 @@ Four subpath exports: `.` (core), `./server`, `./react`, `./react/streamdown`. S
 
 All must pass before committing. Add a changeset for any public API change or bug fix.
 
+Do NOT run `pnpm build` inside `examples/nextjs/` — Next.js build outputs break `pnpm dev` afterward. Verify example changes with type-check only.
+
 ## Environment
 
 - Node 22 via nvm (`source ~/.nvm/nvm.sh && nvm use 22`)

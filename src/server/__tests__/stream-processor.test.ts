@@ -49,8 +49,8 @@ describe("createStreamProcessor", () => {
       const { deps, chunks } = createTestDeps();
       const processor = createStreamProcessor(deps);
 
-      processor({ type: "start-step" });
-      processor({ type: "finish-step" });
+      processor.process({ type: "start-step" });
+      processor.process({ type: "finish-step" });
 
       expect(chunks).toMatchInlineSnapshot(`
         [
@@ -70,8 +70,8 @@ describe("createStreamProcessor", () => {
       const { deps, chunks } = createTestDeps();
       const processor = createStreamProcessor(deps);
 
-      processor({ type: "text-delta", delta: "Hello ", id: "t1" });
-      processor({ type: "text-delta", delta: "world", id: "t1" });
+      processor.process({ type: "text-delta", delta: "Hello ", id: "t1" });
+      processor.process({ type: "text-delta", delta: "world", id: "t1" });
 
       expect(chunks).toEqual([
         { type: "text-delta", delta: "Hello ", id: "t1" },
@@ -85,10 +85,10 @@ describe("createStreamProcessor", () => {
       const { deps, chunks } = createTestDeps();
       const processor = createStreamProcessor(deps);
 
-      processor({ type: "text-delta", delta: "Check this ", id: "t1" });
-      processor({ type: "text-delta", delta: "@cite{", id: "t1" });
-      processor({ type: "text-delta", delta: '"url":"https://x.com"', id: "t1" });
-      processor({ type: "text-delta", delta: "} and more", id: "t1" });
+      processor.process({ type: "text-delta", delta: "Check this ", id: "t1" });
+      processor.process({ type: "text-delta", delta: "@cite{", id: "t1" });
+      processor.process({ type: "text-delta", delta: '"url":"https://x.com"', id: "t1" });
+      processor.process({ type: "text-delta", delta: "} and more", id: "t1" });
 
       const elementParts = chunks.filter(isElementChunk);
       expect(elementParts).toHaveLength(1);
@@ -120,9 +120,9 @@ describe("createStreamProcessor", () => {
       const { deps, chunks } = createTestDeps([citeElement, mapElement]);
       const processor = createStreamProcessor(deps);
 
-      processor({ type: "text-delta", delta: '@cite{"url":"a.com"}', id: "t1" });
-      processor({ type: "text-delta", delta: " then ", id: "t1" });
-      processor({ type: "text-delta", delta: '@map{"lat":1,"lng":2}', id: "t1" });
+      processor.process({ type: "text-delta", delta: '@cite{"url":"a.com"}', id: "t1" });
+      processor.process({ type: "text-delta", delta: " then ", id: "t1" });
+      processor.process({ type: "text-delta", delta: '@map{"lat":1,"lng":2}', id: "t1" });
 
       const elementParts = chunks.filter(isElementChunk);
       expect(elementParts).toHaveLength(2);
@@ -136,7 +136,7 @@ describe("createStreamProcessor", () => {
       const { deps, chunks } = createTestDeps();
       const processor = createStreamProcessor(deps);
 
-      processor({ type: "text-delta", delta: '@cite{"url":"https://x.com"}', id: "t1" });
+      processor.process({ type: "text-delta", delta: '@cite{"url":"https://x.com"}', id: "t1" });
 
       await vi.waitFor(() => {
         const readyParts = chunks.filter((c) => isElementChunk(c) && c.data.state === "ready");
@@ -170,7 +170,7 @@ describe("createStreamProcessor", () => {
       const { deps, chunks } = createTestDeps([failElement], { onEnrichError });
       const processor = createStreamProcessor(deps);
 
-      processor({ type: "text-delta", delta: '@fail{"id":"123"}', id: "t1" });
+      processor.process({ type: "text-delta", delta: '@fail{"id":"123"}', id: "t1" });
 
       await vi.waitFor(() => {
         const errorParts = chunks.filter((c) => isElementChunk(c) && c.data.state === "error");
@@ -201,11 +201,55 @@ describe("createStreamProcessor", () => {
       const { deps, chunks } = createTestDeps();
       const processor = createStreamProcessor(deps);
 
-      processor({ type: "text-delta", delta: '@cite{"url":"x.com"}', id: "t1" });
-      processor({ type: "text-delta", delta: " more text after", id: "t1" });
+      processor.process({ type: "text-delta", delta: '@cite{"url":"x.com"}', id: "t1" });
+      processor.process({ type: "text-delta", delta: " more text after", id: "t1" });
 
       const loadingParts = chunks.filter((c) => isElementChunk(c) && c.data.state === "loading");
       expect(loadingParts).toHaveLength(1);
+    });
+  });
+
+  describe("GIVEN flush is called after processing markers with slow enrichment", () => {
+    it("SHOULD wait for all pending enrichments to complete before resolving", async () => {
+      const slowElement = defineElement({
+        name: "cite",
+        description: "Slow citation",
+        schema: z.object({ url: z.string() }),
+        enrich: async (input) => {
+          await new Promise((resolve) => setTimeout(resolve, 100));
+          return { title: "Slow Result", url: input.url };
+        },
+      });
+
+      const { deps, chunks } = createTestDeps([slowElement]);
+      const processor = createStreamProcessor(deps);
+
+      processor.process({ type: "text-delta", delta: '@cite{"url":"https://slow.com"}', id: "t1" });
+
+      const readyBefore = chunks.filter((c) => isElementChunk(c) && c.data.state === "ready");
+      expect(readyBefore).toHaveLength(0);
+
+      await processor.flush();
+
+      const readyAfter = chunks.filter((c) => isElementChunk(c) && c.data.state === "ready");
+      expect(readyAfter).toHaveLength(1);
+      expect(readyAfter[0]).toMatchInlineSnapshot(`
+        {
+          "data": {
+            "data": {
+              "title": "Slow Result",
+              "url": "https://slow.com",
+            },
+            "input": {
+              "url": "https://slow.com",
+            },
+            "name": "cite",
+            "state": "ready",
+          },
+          "id": "el-0",
+          "type": "data-element",
+        }
+      `);
     });
   });
 });
