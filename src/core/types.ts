@@ -58,10 +58,7 @@ export interface ElementPartError {
   error: string;
 }
 
-export type ElementPartData =
-  | ElementPartLoading
-  | ElementPartReady
-  | ElementPartError;
+export type ElementPartData = ElementPartLoading | ElementPartReady | ElementPartError;
 
 export interface ElementDataTypes extends UIDataTypes {
   element: ElementPartData;

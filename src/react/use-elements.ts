@@ -2,17 +2,8 @@ import { useMemo } from "react";
 import type { UIMessage } from "ai";
 import { isDataUIPart } from "ai";
 import { findMarkers } from "../core/parse-markers";
-import type {
-  AnyElementUIDefinition,
-  ElementPartData,
-  MarkerMatch,
-} from "../core/types";
-import type {
-  Segment,
-  ElementSegment,
-  UseElementsOptions,
-  UseElementsReturn,
-} from "./types";
+import type { AnyElementUIDefinition, ElementPartData, MarkerMatch } from "../core/types";
+import type { Segment, ElementSegment, UseElementsOptions, UseElementsReturn } from "./types";
 
 const isElementDataPart = (
   part: UIMessage["parts"][number],
@@ -81,10 +72,7 @@ const markersToSegments = (
       ? [{ type: "text" as const, content: textBefore }]
       : [];
 
-    return [
-      ...textSegment,
-      createElementSegment(elementId, marker.name, partData, elementDef),
-    ];
+    return [...textSegment, createElementSegment(elementId, marker.name, partData, elementDef)];
   });
 
   const lastEnd = markers[markers.length - 1]?.end ?? 0;

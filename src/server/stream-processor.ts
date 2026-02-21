@@ -129,10 +129,6 @@ export const createStreamProcessor = <TDeps>(
 
     if (chunk.type !== "text-delta") return;
 
-    stateRef.current = processTextDelta(
-      stateRef.current,
-      chunk.delta,
-      processorDeps,
-    );
+    stateRef.current = processTextDelta(stateRef.current, chunk.delta, processorDeps);
   };
 };

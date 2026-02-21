@@ -2,11 +2,7 @@ import { useMemo, type FunctionComponent } from "react";
 import type { UIMessage } from "ai";
 import { isDataUIPart } from "ai";
 import { findMarkers } from "../core/parse-markers";
-import type {
-  AnyElementUIDefinition,
-  ElementPartData,
-  MarkerMatch,
-} from "../core/types";
+import type { AnyElementUIDefinition, ElementPartData, MarkerMatch } from "../core/types";
 
 interface UseMarkdownElementsOptions {
   readonly text: string;
@@ -40,18 +36,12 @@ const findElementPart = (
   return part?.data;
 };
 
-const replaceMarkersWithHtml = (
-  text: string,
-  markers: ReadonlyArray<MarkerMatch>,
-): string =>
-  markers.reduceRight(
-    (acc, marker, index) => {
-      const elementId = `el-${index}`;
-      const htmlTag = `<${marker.name} data-element-id="${elementId}"></${marker.name}>`;
-      return acc.slice(0, marker.start) + htmlTag + acc.slice(marker.end);
-    },
-    text,
-  );
+const replaceMarkersWithHtml = (text: string, markers: ReadonlyArray<MarkerMatch>): string =>
+  markers.reduceRight((acc, marker, index) => {
+    const elementId = `el-${index}`;
+    const htmlTag = `<${marker.name} data-element-id="${elementId}"></${marker.name}>`;
+    return acc.slice(0, marker.start) + htmlTag + acc.slice(marker.end);
+  }, text);
 
 const createElementComponent =
   (
@@ -81,10 +71,7 @@ const buildComponents = (
   parts: UIMessage["parts"],
 ): Readonly<Record<string, FunctionComponent<Record<string, string>>>> =>
   Object.fromEntries(
-    elements.map((elementDef) => [
-      elementDef.name,
-      createElementComponent(elementDef, parts),
-    ]),
+    elements.map((elementDef) => [elementDef.name, createElementComponent(elementDef, parts)]),
   );
 
 export const useMarkdownElements = (

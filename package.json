@@ -3,11 +3,19 @@
   "version": "0.0.1",
   "description": "Rich UI elements for the Vercel AI SDK. Define, enrich, and render structured content inline with LLM text.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jacobwisniewski/ai-sdk-elements.git"
+  },
+  "files": [
+    "dist/**/*",
+    "README.md"
+  ],
   "type": "module",
+  "sideEffects": false,
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "sideEffects": false,
   "exports": {
     "./package.json": "./package.json",
     ".": {
@@ -51,10 +59,6 @@
       }
     }
   },
-  "files": [
-    "dist/**/*",
-    "README.md"
-  ],
   "scripts": {
     "build": "pnpm clean && tsup",
     "build:watch": "pnpm clean && tsup --watch",
@@ -62,7 +66,24 @@
     "type-check": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "eslint \"src/**/*.ts*\""
+    "lint": "oxlint",
+    "fmt": "oxfmt",
+    "fmt:check": "oxfmt --check"
+  },
+  "devDependencies": {
+    "@testing-library/react": "^16.3.2",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "ai": "^5.0.0",
+    "jsdom": "^28.1.0",
+    "oxfmt": "^0.34.0",
+    "oxlint": "^1.49.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.2.4",
+    "tsup": "^8.0.0",
+    "typescript": "^5.8.0",
+    "vitest": "^3.0.0",
+    "zod": "^3.25.0"
   },
   "peerDependencies": {
     "ai": "^5.0.0",
@@ -73,19 +94,6 @@
     "react": {
       "optional": true
     }
-  },
-  "devDependencies": {
-    "@testing-library/react": "^16.3.2",
-    "@types/node": "^22.0.0",
-    "@types/react": "^19.0.0",
-    "ai": "^5.0.0",
-    "jsdom": "^28.1.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.2.4",
-    "tsup": "^8.0.0",
-    "typescript": "^5.8.0",
-    "vitest": "^3.0.0",
-    "zod": "^3.25.0"
   },
   "engines": {
     "node": ">=18"

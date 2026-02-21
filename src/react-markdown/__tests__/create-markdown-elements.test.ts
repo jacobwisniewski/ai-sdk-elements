@@ -22,10 +22,7 @@ const mapUI = defineElementUI({
   render: (data) => createElement("div", null, `${data.lat},${data.lng}`),
 });
 
-const makeDataPart = (
-  id: string,
-  data: ElementPartData,
-): UIMessage["parts"][number] => ({
+const makeDataPart = (id: string, data: ElementPartData): UIMessage["parts"][number] => ({
   type: "data-element" as const,
   id,
   data,
@@ -93,9 +90,7 @@ describe("useMarkdownElements", () => {
         }),
       ];
 
-      const { result } = renderHook(() =>
-        useMarkdownElements({ text, parts, elements: [citeUI] }),
-      );
+      const { result } = renderHook(() => useMarkdownElements({ text, parts, elements: [citeUI] }));
 
       const CiteComponent = result.current.components.cite;
       const rendered = CiteComponent({ "data-element-id": "el-0" });
@@ -119,9 +114,7 @@ describe("useMarkdownElements", () => {
         }),
       ];
 
-      const { result } = renderHook(() =>
-        useMarkdownElements({ text, parts, elements: [citeUI] }),
-      );
+      const { result } = renderHook(() => useMarkdownElements({ text, parts, elements: [citeUI] }));
 
       const CiteComponent = result.current.components.cite;
       const rendered = CiteComponent({ "data-element-id": "el-0" });

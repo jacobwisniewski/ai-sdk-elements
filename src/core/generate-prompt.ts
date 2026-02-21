@@ -48,9 +48,7 @@ const describeSchemaFields = (schema: z.ZodTypeAny): string[] => {
   return fields;
 };
 
-export const generateElementPrompt = (
-  elements: ReadonlyArray<AnyElementDefinition>,
-): string => {
+export const generateElementPrompt = (elements: ReadonlyArray<AnyElementDefinition>): string => {
   const header = `## Display Elements
 
 Output these markers to render rich UI components. Format: \`@name{...json...}\`
@@ -60,8 +58,7 @@ Place each marker on its own line within your response.
 
   const sections = elements.map((el) => {
     const fields = describeSchemaFields(el.schema);
-    const fieldsSection =
-      fields.length > 0 ? `\n**Fields:**\n${fields.join("\n")}\n` : "";
+    const fieldsSection = fields.length > 0 ? `\n**Fields:**\n${fields.join("\n")}\n` : "";
 
     const example = el.example ?? generateSchemaExample(el.schema);
     const exampleJson = JSON.stringify(example);

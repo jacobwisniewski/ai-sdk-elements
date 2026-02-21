@@ -10,36 +10,30 @@ const findClosingBrace = (text: string, from: number): number => {
   return search(from, 0);
 };
 
-const collectMatches = (
-  text: string,
-  regex: RegExp,
-): ReadonlyArray<RegExpExecArray> => {
+const collectMatches = (text: string, regex: RegExp): ReadonlyArray<RegExpExecArray> => {
   const result = regex.exec(text);
   if (!result) return [];
   return [result, ...collectMatches(text, regex)];
 };
 
 export const findMarkers = (text: string): ReadonlyArray<MarkerMatch> =>
-  collectMatches(text, /@(\w+)\{/g).reduce<ReadonlyArray<MarkerMatch>>(
-    (acc, match) => {
-      const name = match[1];
-      const jsonStart = match.index + match[0].length - 1;
-      const jsonEnd = findClosingBrace(text, jsonStart);
+  collectMatches(text, /@(\w+)\{/g).reduce<ReadonlyArray<MarkerMatch>>((acc, match) => {
+    const name = match[1];
+    const jsonStart = match.index + match[0].length - 1;
+    const jsonEnd = findClosingBrace(text, jsonStart);
 
-      return jsonEnd === -1
-        ? acc
-        : [
-            ...acc,
-            {
-              name,
-              rawInput: text.slice(jsonStart, jsonEnd),
-              start: match.index,
-              end: jsonEnd,
-            },
-          ];
-    },
-    [],
-  );
+    return jsonEnd === -1
+      ? acc
+      : [
+          ...acc,
+          {
+            name,
+            rawInput: text.slice(jsonStart, jsonEnd),
+            start: match.index,
+            end: jsonEnd,
+          },
+        ];
+  }, []);
 
 export const parseMarker = (
   match: MarkerMatch,

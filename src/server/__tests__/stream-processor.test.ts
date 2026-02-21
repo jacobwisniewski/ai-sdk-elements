@@ -2,7 +2,11 @@ import { describe, it, expect, vi } from "vitest";
 import { z } from "zod";
 import { createStreamProcessor, type StreamProcessorDeps } from "../stream-processor";
 import { defineElement } from "../../core/define-element";
-import type { AnyElementDefinition, ElementUIMessageChunk, ElementPartData } from "../../core/types";
+import type {
+  AnyElementDefinition,
+  ElementUIMessageChunk,
+  ElementPartData,
+} from "../../core/types";
 
 const citeElement = defineElement({
   name: "cite",
@@ -135,15 +139,11 @@ describe("createStreamProcessor", () => {
       processor({ type: "text-delta", delta: '@cite{"url":"https://x.com"}', id: "t1" });
 
       await vi.waitFor(() => {
-        const readyParts = chunks.filter(
-          (c) => isElementChunk(c) && c.data.state === "ready",
-        );
+        const readyParts = chunks.filter((c) => isElementChunk(c) && c.data.state === "ready");
         expect(readyParts).toHaveLength(1);
       });
 
-      const readyPart = chunks.find(
-        (c) => isElementChunk(c) && c.data.state === "ready",
-      );
+      const readyPart = chunks.find((c) => isElementChunk(c) && c.data.state === "ready");
       expect(readyPart).toMatchInlineSnapshot(`
         {
           "data": {
@@ -173,15 +173,11 @@ describe("createStreamProcessor", () => {
       processor({ type: "text-delta", delta: '@fail{"id":"123"}', id: "t1" });
 
       await vi.waitFor(() => {
-        const errorParts = chunks.filter(
-          (c) => isElementChunk(c) && c.data.state === "error",
-        );
+        const errorParts = chunks.filter((c) => isElementChunk(c) && c.data.state === "error");
         expect(errorParts).toHaveLength(1);
       });
 
-      const errorPart = chunks.find(
-        (c) => isElementChunk(c) && c.data.state === "error",
-      );
+      const errorPart = chunks.find((c) => isElementChunk(c) && c.data.state === "error");
       expect(errorPart).toMatchInlineSnapshot(`
         {
           "data": {
@@ -208,9 +204,7 @@ describe("createStreamProcessor", () => {
       processor({ type: "text-delta", delta: '@cite{"url":"x.com"}', id: "t1" });
       processor({ type: "text-delta", delta: " more text after", id: "t1" });
 
-      const loadingParts = chunks.filter(
-        (c) => isElementChunk(c) && c.data.state === "loading",
-      );
+      const loadingParts = chunks.filter((c) => isElementChunk(c) && c.data.state === "loading");
       expect(loadingParts).toHaveLength(1);
     });
   });

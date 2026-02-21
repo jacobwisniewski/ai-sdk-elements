@@ -16,10 +16,7 @@ const citeUI = defineElementUI({
   error: (msg) => createElement("span", { className: "error" }, msg),
 });
 
-const makeDataPart = (
-  id: string,
-  data: ElementPartData,
-): UIMessage["parts"][number] => ({
+const makeDataPart = (id: string, data: ElementPartData): UIMessage["parts"][number] => ({
   type: "data-element" as const,
   id,
   data,
@@ -42,9 +39,7 @@ describe("useElements", () => {
     });
 
     it("SHOULD return empty segments for empty text", () => {
-      const { result } = renderHook(() =>
-        useElements({ text: "", parts: [], elements: [] }),
-      );
+      const { result } = renderHook(() => useElements({ text: "", parts: [], elements: [] }));
       expect(result.current.segments).toMatchInlineSnapshot(`[]`);
     });
   });
@@ -61,9 +56,7 @@ describe("useElements", () => {
         }),
       ];
 
-      const { result } = renderHook(() =>
-        useElements({ text, parts, elements: [citeUI] }),
-      );
+      const { result } = renderHook(() => useElements({ text, parts, elements: [citeUI] }));
 
       expect(result.current.segments).toHaveLength(3);
       expect(result.current.segments[0]).toMatchInlineSnapshot(`
@@ -99,9 +92,7 @@ describe("useElements", () => {
         }),
       ];
 
-      const { result } = renderHook(() =>
-        useElements({ text, parts, elements: [citeUI] }),
-      );
+      const { result } = renderHook(() => useElements({ text, parts, elements: [citeUI] }));
 
       expect(result.current.segments).toHaveLength(1);
       const segment = result.current.segments[0];
@@ -121,9 +112,7 @@ describe("useElements", () => {
         }),
       ];
 
-      const { result } = renderHook(() =>
-        useElements({ text, parts, elements: [citeUI] }),
-      );
+      const { result } = renderHook(() => useElements({ text, parts, elements: [citeUI] }));
 
       const segment = result.current.segments[0] as { render: () => unknown };
       const rendered = segment.render();
@@ -147,9 +136,7 @@ describe("useElements", () => {
         }),
       ];
 
-      const { result } = renderHook(() =>
-        useElements({ text, parts, elements: [citeUI] }),
-      );
+      const { result } = renderHook(() => useElements({ text, parts, elements: [citeUI] }));
 
       const segment = result.current.segments[0] as { render: () => unknown };
       const rendered = segment.render();
@@ -175,9 +162,7 @@ describe("useElements", () => {
         }),
       ];
 
-      const { result } = renderHook(() =>
-        useElements({ text, parts, elements: [citeUI] }),
-      );
+      const { result } = renderHook(() => useElements({ text, parts, elements: [citeUI] }));
 
       const segment = result.current.segments[0] as { render: () => unknown };
       const rendered = segment.render();
@@ -195,9 +180,7 @@ describe("useElements", () => {
     it("SHOULD default to loading state", () => {
       const text = '@cite{"url":"https://x.com"}';
 
-      const { result } = renderHook(() =>
-        useElements({ text, parts: [], elements: [citeUI] }),
-      );
+      const { result } = renderHook(() => useElements({ text, parts: [], elements: [citeUI] }));
 
       expect(result.current.segments).toHaveLength(1);
       expect(result.current.segments[0]).toMatchObject({
@@ -211,9 +194,7 @@ describe("useElements", () => {
     it("SHOULD create segment that renders null", () => {
       const text = '@unknown{"x":1}';
 
-      const { result } = renderHook(() =>
-        useElements({ text, parts: [], elements: [citeUI] }),
-      );
+      const { result } = renderHook(() => useElements({ text, parts: [], elements: [citeUI] }));
 
       expect(result.current.segments).toHaveLength(1);
       const segment = result.current.segments[0] as { render: () => unknown };
@@ -238,9 +219,7 @@ describe("useElements", () => {
         }),
       ];
 
-      const { result } = renderHook(() =>
-        useElements({ text, parts, elements: [citeUI] }),
-      );
+      const { result } = renderHook(() => useElements({ text, parts, elements: [citeUI] }));
 
       expect(result.current.segments).toHaveLength(3);
       expect(result.current.segments[0]).toMatchObject({
