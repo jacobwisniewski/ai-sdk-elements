@@ -14,6 +14,7 @@ interface UseMarkdownElementsReturn {
   readonly processedText: string;
   readonly components: Record<string, FunctionComponent<Record<string, unknown>>>;
   readonly elementNames: ReadonlyArray<string>;
+  readonly hasLoadingElements: boolean;
 }
 
 const isElementDataPart = (
@@ -95,13 +96,18 @@ export const useMarkdownElements = (
     const elementNames = [...new Set(elements.map((el) => el.name))];
 
     if (markers.length === 0) {
-      return { processedText: text, components: {}, elementNames };
+      return { processedText: text, components: {}, elementNames, hasLoadingElements: false };
     }
+
+    const hasLoadingElements = markers.some(
+      (_marker, index) => getElementState(parts, `el-${index}`) === "loading",
+    );
 
     return {
       processedText: replaceMarkersWithHtml(text, markers, parts),
       components: buildComponents(elements, parts),
       elementNames,
+      hasLoadingElements,
     };
   }, [text, parts, elements]);
 };
