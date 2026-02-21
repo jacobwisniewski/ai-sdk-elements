@@ -49,7 +49,7 @@ describe("useMarkdownElements", () => {
       );
 
       expect(result.current.processedText).toBe(
-        'See <cite data-element-id="el-0"></cite> for details',
+        'See <cite data-element-id="el-0" data-element-state="loading"></cite> for details',
       );
     });
 
@@ -91,6 +91,10 @@ describe("useMarkdownElements", () => {
       ];
 
       const { result } = renderHook(() => useMarkdownElements({ text, parts, elements: [citeUI] }));
+
+      expect(result.current.processedText).toBe(
+        '<cite data-element-id="el-0" data-element-state="ready"></cite>',
+      );
 
       const CiteComponent = result.current.components.cite;
       const rendered = CiteComponent({ "data-element-id": "el-0" });
@@ -140,7 +144,7 @@ describe("useMarkdownElements", () => {
       );
 
       expect(result.current.processedText).toBe(
-        '<cite data-element-id="el-0"></cite> then <map data-element-id="el-1"></map>',
+        '<cite data-element-id="el-0" data-element-state="loading"></cite> then <map data-element-id="el-1" data-element-state="loading"></map>',
       );
     });
 
@@ -182,6 +186,39 @@ describe("useMarkdownElements", () => {
       const CiteComponent = result.current.components.cite;
       const rendered = CiteComponent({});
       expect(rendered).toBeNull();
+    });
+  });
+
+  describe("GIVEN element state transitions", () => {
+    it("SHOULD change processedText when part transitions from loading to ready", () => {
+      const text = '@cite{"url":"https://x.com"}';
+      const loadingParts: UIMessage["parts"] = [
+        makeDataPart("el-0", {
+          name: "cite",
+          input: { url: "https://x.com" },
+          state: "loading",
+        }),
+      ];
+
+      const { result, rerender } = renderHook(
+        ({ parts }) => useMarkdownElements({ text, parts, elements: [citeUI] }),
+        { initialProps: { parts: loadingParts } },
+      );
+
+      expect(result.current.processedText).toContain('data-element-state="loading"');
+
+      const readyParts: UIMessage["parts"] = [
+        makeDataPart("el-0", {
+          name: "cite",
+          input: { url: "https://x.com" },
+          state: "ready",
+          data: { title: "Example", url: "https://x.com" },
+        }),
+      ];
+
+      rerender({ parts: readyParts });
+
+      expect(result.current.processedText).toContain('data-element-state="ready"');
     });
   });
 });

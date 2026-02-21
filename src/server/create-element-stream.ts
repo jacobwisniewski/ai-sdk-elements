@@ -27,10 +27,11 @@ export const createElementStream = <TDeps>(
       const pump = async (): Promise<void> => {
         const { done, value } = await reader.read();
         if (done) {
+          await processor.flush();
           controller.close();
           return;
         }
-        processor(value);
+        processor.process(value);
         return pump();
       };
 

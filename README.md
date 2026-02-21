@@ -150,7 +150,9 @@ const MarkdownMessage = ({ message }) => {
 
   return (
     <Streamdown
-      allowedTags={Object.fromEntries(elementNames.map((name) => [name, ["data-element-id"]]))}
+      allowedTags={Object.fromEntries(
+        elementNames.map((name) => [name, ["dataElementId", "dataElementState"]]),
+      )}
       components={components}
     >
       {processedText}
@@ -161,7 +163,7 @@ const MarkdownMessage = ({ message }) => {
 
 `useMarkdownElements` returns:
 
-- `processedText` — markdown with markers replaced by `<name data-element-id="el-0"></name>` HTML tags
+- `processedText` — markdown with markers replaced by `<name data-element-id="el-0" data-element-state="loading"></name>` HTML tags
 - `components` — a record mapping element names to React components (pass directly to Streamdown)
 - `elementNames` — deduplicated list of element names found in the text (use with `allowedTags` to whitelist them through Streamdown's sanitizer)
 

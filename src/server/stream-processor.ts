@@ -20,6 +20,11 @@ export interface StreamProcessorDeps<TDeps> {
   readonly onEnrichError?: (error: unknown, marker: ParsedMarker) => void;
 }
 
+export interface StreamProcessor {
+  readonly process: (chunk: ElementUIMessageChunk) => void;
+  readonly flush: () => Promise<void>;
+}
+
 const INITIAL_STATE: StreamProcessorState = {
   buffer: "",
   processedCount: 0,
@@ -40,11 +45,11 @@ const fireEnrichment = <TDeps>(
   parsed: ParsedMarker,
   elementId: string,
   processorDeps: StreamProcessorDeps<TDeps>,
-): void => {
+): Promise<void> => {
   const element = processorDeps.elements.find((el) => el.name === parsed.name);
-  if (!element) return;
+  if (!element) return Promise.resolve();
 
-  element
+  return element
     .enrich(parsed.input, processorDeps.deps)
     .then((data) => {
       emitElementPart(processorDeps.write, elementId, {
@@ -69,6 +74,7 @@ const processNewMarkers = <TDeps>(
   matches: ReadonlyArray<MarkerMatch>,
   state: StreamProcessorState,
   processorDeps: StreamProcessorDeps<TDeps>,
+  pending: Array<Promise<void>>,
 ): StreamProcessorState =>
   matches.reduce<StreamProcessorState>((acc, match) => {
     if (acc.knownMarkerEnds.has(match.end)) return acc;
@@ -84,7 +90,7 @@ const processNewMarkers = <TDeps>(
       state: "loading",
     });
 
-    fireEnrichment(parsed, elementId, processorDeps);
+    pending.push(fireEnrichment(parsed, elementId, processorDeps));
 
     return {
       ...acc,
@@ -111,24 +117,29 @@ const processTextDelta = <TDeps>(
   state: StreamProcessorState,
   delta: string,
   processorDeps: StreamProcessorDeps<TDeps>,
+  pending: Array<Promise<void>>,
 ): StreamProcessorState => {
   const newBuffer = state.buffer + delta;
   const bufferedState: StreamProcessorState = { ...state, buffer: newBuffer };
   const matches = findMarkers(newBuffer);
-  const afterMarkers = processNewMarkers(matches, bufferedState, processorDeps);
+  const afterMarkers = processNewMarkers(matches, bufferedState, processorDeps, pending);
   return trimBuffer(afterMarkers, matches);
 };
 
 export const createStreamProcessor = <TDeps>(
   processorDeps: StreamProcessorDeps<TDeps>,
-): ((chunk: ElementUIMessageChunk) => void) => {
+): StreamProcessor => {
   const stateRef = { current: INITIAL_STATE };
+  const pending: Array<Promise<void>> = [];
 
-  return (chunk: ElementUIMessageChunk) => {
-    processorDeps.write(chunk);
+  return {
+    process: (chunk: ElementUIMessageChunk) => {
+      processorDeps.write(chunk);
 
-    if (chunk.type !== "text-delta") return;
+      if (chunk.type !== "text-delta") return;
 
-    stateRef.current = processTextDelta(stateRef.current, chunk.delta, processorDeps);
+      stateRef.current = processTextDelta(stateRef.current, chunk.delta, processorDeps, pending);
+    },
+    flush: () => Promise.all(pending).then(() => undefined),
   };
 };

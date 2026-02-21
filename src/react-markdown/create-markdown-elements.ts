@@ -12,7 +12,7 @@ interface UseMarkdownElementsOptions {
 
 interface UseMarkdownElementsReturn {
   readonly processedText: string;
-  readonly components: Readonly<Record<string, FunctionComponent<Record<string, string>>>>;
+  readonly components: Record<string, FunctionComponent<Record<string, unknown>>>;
   readonly elementNames: ReadonlyArray<string>;
 }
 
@@ -36,10 +36,20 @@ const findElementPart = (
   return part?.data;
 };
 
-const replaceMarkersWithHtml = (text: string, markers: ReadonlyArray<MarkerMatch>): string =>
+const getElementState = (parts: UIMessage["parts"], elementId: string): string => {
+  const partData = findElementPart(parts, elementId);
+  return partData?.state ?? "loading";
+};
+
+const replaceMarkersWithHtml = (
+  text: string,
+  markers: ReadonlyArray<MarkerMatch>,
+  parts: UIMessage["parts"],
+): string =>
   markers.reduceRight((acc, marker, index) => {
     const elementId = `el-${index}`;
-    const htmlTag = `<${marker.name} data-element-id="${elementId}"></${marker.name}>`;
+    const state = getElementState(parts, elementId);
+    const htmlTag = `<${marker.name} data-element-id="${elementId}" data-element-state="${state}"></${marker.name}>`;
     return acc.slice(0, marker.start) + htmlTag + acc.slice(marker.end);
   }, text);
 
@@ -47,9 +57,10 @@ const createElementComponent =
   (
     elementDef: AnyElementUIDefinition,
     parts: UIMessage["parts"],
-  ): FunctionComponent<Record<string, string>> =>
-  (props: Record<string, string>) => {
-    const elementId = props["data-element-id"];
+  ): FunctionComponent<Record<string, unknown>> =>
+  (props: Record<string, unknown>) => {
+    const elementId =
+      typeof props["data-element-id"] === "string" ? props["data-element-id"] : undefined;
     if (!elementId) return null;
 
     const partData = findElementPart(parts, elementId);
@@ -69,7 +80,7 @@ const createElementComponent =
 const buildComponents = (
   elements: ReadonlyArray<AnyElementUIDefinition>,
   parts: UIMessage["parts"],
-): Readonly<Record<string, FunctionComponent<Record<string, string>>>> =>
+): Record<string, FunctionComponent<Record<string, unknown>>> =>
   Object.fromEntries(
     elements.map((elementDef) => [elementDef.name, createElementComponent(elementDef, parts)]),
   );
@@ -88,7 +99,7 @@ export const useMarkdownElements = (
     }
 
     return {
-      processedText: replaceMarkersWithHtml(text, markers),
+      processedText: replaceMarkersWithHtml(text, markers, parts),
       components: buildComponents(elements, parts),
       elementNames,
     };
