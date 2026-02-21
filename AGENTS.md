@@ -15,7 +15,7 @@ Four subpath exports: `.` (core), `./server`, `./react`, `./react/streamdown`. S
 ## Commands
 
 - `pnpm build` — tsup (CJS + ESM + DTS)
-- `pnpm test` — vitest (64 tests)
+- `pnpm test` — vitest
 - `pnpm type-check` — tsc --noEmit
 - `pnpm lint` — oxlint
 - `pnpm fmt` / `pnpm fmt:check` — oxfmt
