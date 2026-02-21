@@ -7,6 +7,7 @@ export const weatherElementUI = defineElementUI({
   name: "weather",
   dataSchema: z.object({
     city: z.string(),
+    country: z.string(),
     condition: z.string(),
     temperature: z.number(),
     humidity: z.number(),
@@ -28,7 +29,7 @@ export const weatherElementUI = defineElementUI({
       <span className="flex items-start justify-between gap-6">
         <span className="block">
           <span className="block text-lg font-semibold text-zinc-900">
-            {data.city}
+            {data.city}, {data.country}
           </span>
           <span className="block text-sm text-zinc-500">{data.condition}</span>
         </span>
