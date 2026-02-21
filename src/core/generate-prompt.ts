@@ -1,40 +1,32 @@
 import { z } from "zod";
+import type { core } from "zod";
 import type { AnyElementDefinition } from "./types";
 
-interface JSONSchemaObject {
-  readonly type?: string;
-  readonly properties?: Readonly<Record<string, JSONSchemaObject>>;
-  readonly required?: ReadonlyArray<string>;
-  readonly items?: JSONSchemaObject;
-  readonly enum?: ReadonlyArray<unknown>;
-  readonly description?: string;
-  readonly minimum?: number;
-  readonly maximum?: number;
-  readonly exclusiveMinimum?: number;
-  readonly exclusiveMaximum?: number;
-  readonly minLength?: number;
-  readonly maxLength?: number;
-  readonly minItems?: number;
-  readonly maxItems?: number;
-}
+type JSONSchemaNode = core.JSONSchema.JSONSchema;
 
-const generateExampleFromSchema = (schema: JSONSchemaObject): unknown => {
+const isSchemaObject = (
+  schema: core.JSONSchema._JSONSchema | core.JSONSchema._JSONSchema[],
+): schema is JSONSchemaNode => typeof schema === "object" && !Array.isArray(schema);
+
+const generateExampleFromSchema = (schema: JSONSchemaNode): unknown => {
   if (schema.enum) return schema.enum[0];
   if (schema.type === "string") return "example";
   if (schema.type === "number" || schema.type === "integer") return 0;
   if (schema.type === "boolean") return true;
-  if (schema.type === "array") return schema.items ? [generateExampleFromSchema(schema.items)] : [];
+  if (schema.type === "array" && schema.items && isSchemaObject(schema.items))
+    return [generateExampleFromSchema(schema.items)];
+  if (schema.type === "array") return [];
   if (schema.type === "object" && schema.properties) {
     return Object.fromEntries(
       Object.entries(schema.properties)
-        .filter(([key]) => schema.required?.includes(key) ?? false)
-        .map(([key, prop]) => [key, generateExampleFromSchema(prop)]),
+        .filter(([key, prop]) => (schema.required?.includes(key) ?? false) && isSchemaObject(prop))
+        .map(([key, prop]) => [key, generateExampleFromSchema(prop as JSONSchemaNode)]),
     );
   }
   return "...";
 };
 
-const formatConstraints = (prop: JSONSchemaObject): ReadonlyArray<string> => {
+const formatConstraints = (prop: JSONSchemaNode): ReadonlyArray<string> => {
   const constraints: Array<string> = [];
   if (prop.minimum !== undefined) constraints.push(`min: ${prop.minimum}`);
   if (prop.exclusiveMinimum !== undefined) constraints.push(`min: >${prop.exclusiveMinimum}`);
@@ -49,7 +41,7 @@ const formatConstraints = (prop: JSONSchemaObject): ReadonlyArray<string> => {
 
 const describeField = (
   key: string,
-  prop: JSONSchemaObject,
+  prop: JSONSchemaNode,
   required: ReadonlyArray<string>,
 ): string => {
   const parts: Array<string> = [`\`${key}\``];
@@ -58,7 +50,8 @@ const describeField = (
 
   const annotations: Array<string> = [];
   if (prop.type) annotations.push(prop.type);
-  if (prop.enum) annotations.push(`one of: ${prop.enum.map((v) => JSON.stringify(v)).join(", ")}`);
+  if (prop.enum)
+    annotations.push(`one of: ${prop.enum.map((v: unknown) => JSON.stringify(v)).join(", ")}`);
 
   const constraints = formatConstraints(prop);
   if (constraints.length > 0) annotations.push(...constraints);
@@ -69,12 +62,12 @@ const describeField = (
   return `  - ${parts.join("")}`;
 };
 
-const describeSchemaFields = (jsonSchema: JSONSchemaObject): ReadonlyArray<string> => {
+const describeSchemaFields = (jsonSchema: JSONSchemaNode): ReadonlyArray<string> => {
   if (jsonSchema.type !== "object" || !jsonSchema.properties) return [];
   const required = jsonSchema.required ?? [];
-  return Object.entries(jsonSchema.properties).map(([key, prop]) =>
-    describeField(key, prop, required),
-  );
+  return Object.entries(jsonSchema.properties)
+    .filter(([, prop]) => isSchemaObject(prop))
+    .map(([key, prop]) => describeField(key, prop as JSONSchemaNode, required));
 };
 
 export const generateElementPrompt = (elements: ReadonlyArray<AnyElementDefinition>): string => {
@@ -85,7 +78,7 @@ Output these markers to render rich UI components. Format: \`@name{...json...}\`
 `;
 
   const sections = elements.map((el) => {
-    const jsonSchema = z.toJSONSchema(el.schema) as JSONSchemaObject;
+    const jsonSchema = z.toJSONSchema(el.schema);
     const fields = describeSchemaFields(jsonSchema);
     const fieldsSection = fields.length > 0 ? `\n**Fields:**\n${fields.join("\n")}\n` : "";
 
