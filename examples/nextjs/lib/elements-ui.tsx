@@ -1,18 +1,11 @@
 "use client";
 
-import { z } from "zod";
 import { defineElementUI } from "ai-sdk-elements";
+import { weatherOutputSchema } from "@/lib/elements";
 
 export const weatherElementUI = defineElementUI({
   name: "weather",
-  dataSchema: z.object({
-    city: z.string(),
-    country: z.string(),
-    condition: z.string(),
-    temperature: z.number(),
-    humidity: z.number(),
-    wind: z.number(),
-  }),
+  dataSchema: weatherOutputSchema,
   loading: () => (
     <span className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-500">
       <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-600" />

@@ -6,11 +6,13 @@ export interface ElementDefinition<
   TName extends string = string,
   TInput extends z.ZodType = z.ZodType,
   TDeps = unknown,
+  TOutput extends z.ZodType = z.ZodType<Record<string, unknown>>,
 > {
   name: TName;
   description: string;
   schema: TInput;
-  enrich: (input: z.infer<TInput>, deps: TDeps) => Promise<Record<string, unknown>>;
+  outputSchema?: TOutput;
+  enrich: (input: z.infer<TInput>, deps: TDeps) => Promise<z.infer<TOutput>>;
 }
 
 export interface ElementUIDefinition<
@@ -67,5 +69,10 @@ export type ElementUIMessage = UIMessage<unknown, ElementDataTypes>;
 
 export type ElementUIMessageChunk = UIMessageChunk<unknown, ElementDataTypes>;
 
-export type AnyElementDefinition = ElementDefinition<string, z.ZodType, unknown>;
+export type AnyElementDefinition = ElementDefinition<
+  string,
+  z.ZodType,
+  unknown,
+  z.ZodType<Record<string, unknown>>
+>;
 export type AnyElementUIDefinition = ElementUIDefinition<string, z.ZodType>;

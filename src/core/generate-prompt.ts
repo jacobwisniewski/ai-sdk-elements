@@ -16,6 +16,15 @@ Output these markers to render rich UI components. Format: \`@name{...json...}\`
   const sections = elements.map((el) => {
     const jsonSchema = stripNoise(z.toJSONSchema(el.schema));
 
+    const outputSection = el.outputSchema
+      ? `
+
+**Renders:**
+\`\`\`json
+${JSON.stringify(stripNoise(z.toJSONSchema(el.outputSchema)))}
+\`\`\``
+      : "";
+
     return `### ${el.name}
 
 ${el.description}
@@ -25,7 +34,7 @@ ${el.description}
 **Schema:**
 \`\`\`json
 ${JSON.stringify(jsonSchema)}
-\`\`\``;
+\`\`\`${outputSection}`;
   });
 
   return header + sections.join("\n\n");

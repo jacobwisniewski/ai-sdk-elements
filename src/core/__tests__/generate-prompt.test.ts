@@ -130,4 +130,65 @@ describe("generateElementPrompt", () => {
     expect(result).not.toContain("$schema");
     expect(result).not.toContain("additionalProperties");
   });
+
+  it("SHOULD include a Renders section WHEN outputSchema is provided", () => {
+    const el = defineElement({
+      name: "weather",
+      description: "Display current weather",
+      schema: z.object({ city: z.string() }),
+      outputSchema: z.object({
+        temperature: z.number(),
+        condition: z.string(),
+      }),
+      enrich: async () => ({ temperature: 72, condition: "Sunny" }),
+    });
+
+    expect(generateElementPrompt([el])).toMatchInlineSnapshot(`
+      "## Display Elements
+
+      Output these markers to render rich UI components. Format: \`@name{...json...}\`
+
+      ### weather
+
+      Display current weather
+
+      **Format:** \`@weather{...}\`
+
+      **Schema:**
+      \`\`\`json
+      {"type":"object","properties":{"city":{"type":"string"}},"required":["city"]}
+      \`\`\`
+
+      **Renders:**
+      \`\`\`json
+      {"type":"object","properties":{"temperature":{"type":"number"},"condition":{"type":"string"}},"required":["temperature","condition"]}
+      \`\`\`"
+    `);
+  });
+
+  it("SHOULD NOT include a Renders section WHEN outputSchema is omitted", () => {
+    const el = defineElement({
+      name: "cite",
+      description: "Citation",
+      schema: z.object({ url: z.string() }),
+      enrich: async (input) => input,
+    });
+
+    const result = generateElementPrompt([el]);
+    expect(result).not.toContain("Renders");
+  });
+
+  it("SHOULD strip $schema and additionalProperties from outputSchema", () => {
+    const el = defineElement({
+      name: "test",
+      description: "Test",
+      schema: z.object({ a: z.string() }),
+      outputSchema: z.object({ b: z.number() }),
+      enrich: async () => ({ b: 1 }),
+    });
+
+    const result = generateElementPrompt([el]);
+    expect(result).not.toContain("$schema");
+    expect(result).not.toContain("additionalProperties");
+  });
 });
