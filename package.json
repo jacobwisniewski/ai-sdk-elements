@@ -1,0 +1,74 @@
+{
+  "name": "ai-sdk-elements",
+  "version": "0.0.1",
+  "description": "Rich UI elements for the Vercel AI SDK. Define, enrich, and render structured content inline with LLM text.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "sideEffects": false,
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    },
+    "./server": {
+      "types": "./dist/server.d.ts",
+      "import": "./dist/server.mjs",
+      "require": "./dist/server.js"
+    },
+    "./react": {
+      "types": "./dist/react.d.ts",
+      "import": "./dist/react.mjs",
+      "require": "./dist/react.js"
+    },
+    "./react/markdown": {
+      "types": "./dist/react-markdown.d.ts",
+      "import": "./dist/react-markdown.mjs",
+      "require": "./dist/react-markdown.js"
+    }
+  },
+  "files": [
+    "dist/**/*",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "pnpm clean && tsup",
+    "build:watch": "pnpm clean && tsup --watch",
+    "clean": "rm -rf dist *.tsbuildinfo",
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint \"src/**/*.ts*\""
+  },
+  "peerDependencies": {
+    "ai": "^5.0.0",
+    "react": "^18 || ^19",
+    "zod": "^3.25 || ^4.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@testing-library/react": "^16.3.2",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "ai": "^5.0.0",
+    "jsdom": "^28.1.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.2.4",
+    "tsup": "^8.0.0",
+    "typescript": "^5.8.0",
+    "vitest": "^3.0.0",
+    "zod": "^3.25.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "packageManager": "pnpm@7.18.0+sha512.8a06510748a9f1c9fd7f5825633b0f4c96e5c50722758eff7d27c9fbe8fa1982d3d29a889628ec756f5923859a6b1862db6482e076477b9bcc8926b620aa08a0"
+}
