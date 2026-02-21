@@ -7,7 +7,7 @@ LLMs output `@name{...json...}` markers inline with text. The server parses thes
 ## Install
 
 ```bash
-npm install ai-sdk-elements ai zod react
+npm install ai-sdk-elements ai zod react streamdown
 ```
 
 `ai` (v5+), `zod`, and `react` are peer dependencies.
@@ -60,13 +60,56 @@ const weatherElementUI = defineElementUI({
 });
 ```
 
-### 3. Generate the system prompt
+### 3. Generate the system prompt and stream
+
+Use `generateElementPrompt` to build the instruction block, then pass it as part of the system prompt to `streamText` or a `ToolLoopAgent`.
+
+#### With `streamText`
 
 ```ts
+import { streamText } from "ai";
+import { openai } from "@ai-sdk/openai";
+import { generateElementPrompt } from "ai-sdk-elements";
+import { createElementStream } from "ai-sdk-elements/server";
+
+const elementPrompt = generateElementPrompt([weatherElement]);
+
+export async function POST(req: Request) {
+  const { messages } = await req.json();
+
+  const result = streamText({
+    model: openai("gpt-4.1"),
+    system: `You are a helpful assistant.\n\n${elementPrompt}`,
+    messages,
+  });
+
+  const enrichedStream = createElementStream({
+    source: result.toUIMessageStream(),
+    elements: [weatherElement],
+  });
+
+  return new Response(enrichedStream, {
+    headers: { "Content-Type": "text/event-stream" },
+  });
+}
+```
+
+#### With `ToolLoopAgent`
+
+```ts
+import { ToolLoopAgent, createAgentUIStreamResponse } from "ai";
+import { openai } from "@ai-sdk/openai";
 import { generateElementPrompt } from "ai-sdk-elements";
 
-const systemPrompt = generateElementPrompt([weatherElement]);
-// Returns a markdown prompt instructing the LLM to emit @weather{"city":"..."} markers
+const elementPrompt = generateElementPrompt([weatherElement]);
+
+const agent = new ToolLoopAgent({
+  model: openai("gpt-4.1"),
+  instructions: `You are a helpful assistant.\n\n${elementPrompt}`,
+  tools: {
+    /* your tools here */
+  },
+});
 ```
 
 ### 4. Process the stream (server)
@@ -74,7 +117,6 @@ const systemPrompt = generateElementPrompt([weatherElement]);
 ```ts
 import { createElementStream } from "ai-sdk-elements/server";
 
-// In your API route / server handler:
 const enrichedStream = createElementStream({
   source: aiSdkStream, // ReadableStream<UIMessageChunk> from the AI SDK
   elements: [weatherElement],
@@ -87,65 +129,32 @@ const enrichedStream = createElementStream({
 
 `createElementStream` wraps the AI SDK stream. It passes through all chunks, detects `@name{...}` markers in text deltas, and emits `data-element` parts with progressive state updates (`loading` -> `ready` or `error`).
 
-### 5. Render on the client (React)
+### 5. Render with Streamdown (client)
 
-#### Option A: `useElements` hook
-
-Use this when you want full control over rendering. It returns an array of segments (text and element) that you can render however you like.
+Use `useMarkdownElements` with [Streamdown](https://github.com/vercel/streamdown) to render elements inline with markdown. Markers are replaced with HTML tags that map to React components.
 
 ```tsx
-import { useElements } from "ai-sdk-elements/react";
-
-const MessageContent = ({ message }) => {
-  const textPart = message.parts.find((p) => p.type === "text");
-  const { segments } = useElements({
-    text: textPart?.text ?? "",
-    parts: message.parts,
-    elements: [weatherElementUI],
-  });
-
-  return (
-    <div>
-      {segments.map((segment, i) =>
-        segment.type === "text" ? (
-          <span key={i}>{segment.content}</span>
-        ) : (
-          <div key={segment.elementId}>{segment.render()}</div>
-        ),
-      )}
-    </div>
-  );
-};
-```
-
-Each `ElementSegment` has:
-
-- `name` — the element name
-- `elementId` — stable ID matching the server-emitted data part (e.g. `"el-0"`)
-- `state` — `"loading"` | `"ready"` | `"error"`
-- `render()` — calls the appropriate `render`, `loading`, or `error` function from the UI definition
-
-#### Option B: `useMarkdownElements` hook
-
-Use this with markdown renderers like `react-markdown` + `rehype-raw`. Markers are replaced with HTML tags that map to React components.
-
-```tsx
-import ReactMarkdown from "react-markdown";
-import rehypeRaw from "rehype-raw";
+import { Streamdown } from "streamdown";
+import "streamdown/styles.css";
 import { useMarkdownElements } from "ai-sdk-elements/react/markdown";
 
 const MarkdownMessage = ({ message }) => {
   const textPart = message.parts.find((p) => p.type === "text");
-  const { processedText, components } = useMarkdownElements({
+  const { processedText, components, elementNames } = useMarkdownElements({
     text: textPart?.text ?? "",
     parts: message.parts,
     elements: [weatherElementUI],
   });
 
   return (
-    <ReactMarkdown rehypePlugins={[rehypeRaw]} components={components}>
+    <Streamdown
+      allowedTags={Object.fromEntries(
+        elementNames.map((name) => [name, ["data-element-id"]]),
+      )}
+      components={components}
+    >
       {processedText}
-    </ReactMarkdown>
+    </Streamdown>
   );
 };
 ```
@@ -153,110 +162,8 @@ const MarkdownMessage = ({ message }) => {
 `useMarkdownElements` returns:
 
 - `processedText` — markdown with markers replaced by `<name data-element-id="el-0"></name>` HTML tags
-- `components` — a record mapping element names to React components (pass directly to your markdown renderer)
-- `elementNames` — deduplicated list of element names found in the text
-
-## How It Works
-
-```
-LLM generates text with markers
-  "The weather in Melbourne is: \n@weather{"city":"Melbourne"}\n Great city!"
-        │
-        ▼
-Server (createElementStream)
-  1. Passes through all chunks to the client
-  2. Detects @weather{"city":"Melbourne"} in text-delta chunks
-  3. Validates input against the element's Zod schema
-  4. Emits a data-element part: { id: "el-0", state: "loading" }
-  5. Calls enrich() asynchronously
-  6. Emits a data-element part: { id: "el-0", state: "ready", data: { ... } }
-        │
-        ▼
-Client (useElements / useMarkdownElements)
-  1. Parses markers from the text
-  2. Matches data-element parts by ID
-  3. Renders loading/ready/error states via the UI definition
-```
-
-## API Reference
-
-### Core (`ai-sdk-elements`)
-
-#### `defineElement(definition)`
-
-Identity function for type inference. Defines a server-side element with:
-
-| Property      | Type                                                | Description                                   |
-| ------------- | --------------------------------------------------- | --------------------------------------------- |
-| `name`        | `string`                                            | Marker name the LLM emits                     |
-| `description` | `string`                                            | Description for the LLM prompt                |
-| `schema`      | `ZodType`                                           | Zod schema for the marker's JSON input        |
-| `example?`    | `z.infer<schema>`                                   | Optional example input for the prompt         |
-| `enrich`      | `(input, deps) => Promise<Record<string, unknown>>` | Async function to fetch/compute the full data |
-
-#### `defineElementUI(definition)`
-
-Identity function for type inference. Defines a client-side element UI with:
-
-| Property     | Type                           | Description                             |
-| ------------ | ------------------------------ | --------------------------------------- |
-| `name`       | `string`                       | Must match the server-side element name |
-| `dataSchema` | `ZodType`                      | Zod schema for the enriched data        |
-| `render`     | `(data) => ReactNode`          | Renders the element when data is ready  |
-| `loading?`   | `() => ReactNode`              | Renders while enrichment is in progress |
-| `error?`     | `(error: string) => ReactNode` | Renders when enrichment fails           |
-
-#### `generateElementPrompt(elements)`
-
-Generates a markdown system prompt instructing the LLM how to emit markers. Auto-generates examples from Zod schemas if `example` is not provided.
-
-#### `findMarkers(text)`
-
-Returns all `@name{...}` marker positions in the text. Handles nested braces.
-
-#### `parseMarkers(text, elements)`
-
-Finds and validates all markers against element schemas. Returns only successfully parsed markers.
-
-#### `hasPartialMarker(text)`
-
-Returns `true` if the text ends with an incomplete marker (useful for streaming).
-
-### Server (`ai-sdk-elements/server`)
-
-#### `createElementStream(options)`
-
-Wraps an AI SDK stream and enriches markers. Returns a new `ReadableStream<UIMessageChunk>`.
-
-| Option           | Type                             | Description                                   |
-| ---------------- | -------------------------------- | --------------------------------------------- |
-| `source`         | `ReadableStream<UIMessageChunk>` | The AI SDK source stream                      |
-| `elements`       | `ElementDefinition[]`            | Server-side element definitions               |
-| `deps`           | `TDeps`                          | Dependencies injected into `enrich` functions |
-| `onEnrichError?` | `(error, marker) => void`        | Error callback for enrichment failures        |
-
-#### `createStreamProcessor(deps)`
-
-Lower-level API. Returns a stateful callback `(chunk) => void` that processes chunks and calls `write()` with enriched data parts. Used internally by `createElementStream`.
-
-### React (`ai-sdk-elements/react`)
-
-#### `useElements(options)`
-
-React hook that parses markers from text and matches them with data parts.
-
-Returns `{ segments }` where each segment is either:
-
-- `TextSegment`: `{ type: "text", content: string }`
-- `ElementSegment`: `{ type: "element", name, elementId, state, render() }`
-
-### React Markdown (`ai-sdk-elements/react/markdown`)
-
-#### `useMarkdownElements(options)`
-
-React hook for markdown renderers. Replaces markers with HTML tags and provides matching React components.
-
-Returns `{ processedText, components, elementNames }`.
+- `components` — a record mapping element names to React components (pass directly to Streamdown)
+- `elementNames` — deduplicated list of element names found in the text (use with `allowedTags` to whitelist them through Streamdown's sanitizer)
 
 ## Types
 
