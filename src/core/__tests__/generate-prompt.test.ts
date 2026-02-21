@@ -5,7 +5,7 @@ import { defineElement } from "../define-element";
 
 describe("generateElementPrompt", () => {
   describe("GIVEN a single element definition", () => {
-    it("SHOULD generate a prompt with header, description, fields, and example", () => {
+    it("SHOULD generate a prompt with header, description, format, and schema", () => {
       const cite = defineElement({
         name: "cite",
         description: "Displays a citation with a link",
@@ -22,9 +22,8 @@ describe("generateElementPrompt", () => {
       expect(result).toContain("@name{...json...}");
       expect(result).toContain("### cite");
       expect(result).toContain("Displays a citation with a link");
-      expect(result).toContain("`url`: The URL to cite");
-      expect(result).toContain("`title`: Display title");
-      expect(result).toContain("@cite");
+      expect(result).toContain("@cite{...}");
+      expect(result).toContain("```json");
     });
   });
 
@@ -54,110 +53,6 @@ describe("generateElementPrompt", () => {
     });
   });
 
-  describe("GIVEN an element with a custom example", () => {
-    it("SHOULD use the custom example instead of auto-generated", () => {
-      const cite = defineElement({
-        name: "cite",
-        description: "Citation",
-        schema: z.object({ url: z.string(), label: z.string() }),
-        example: { url: "https://docs.example.com", label: "Documentation" },
-        enrich: async (input) => input,
-      });
-
-      const result = generateElementPrompt([cite]);
-
-      expect(result).toContain("https://docs.example.com");
-      expect(result).toContain("Documentation");
-    });
-  });
-
-  describe("GIVEN an element with optional fields", () => {
-    it("SHOULD mark optional fields in the output", () => {
-      const el = defineElement({
-        name: "card",
-        description: "Card display",
-        schema: z.object({
-          title: z.string(),
-          subtitle: z.optional(z.string()),
-        }),
-        enrich: async (input) => input,
-      });
-
-      const result = generateElementPrompt([el]);
-
-      expect(result).toContain("`title`");
-      expect(result).toContain("`subtitle`");
-      expect(result).toContain("optional");
-      expect(result).not.toMatch(/`title`[^`]*optional/);
-      expect(result).toMatch(/`subtitle`[^`]*optional/);
-    });
-  });
-
-  describe("GIVEN an element with enum fields", () => {
-    it("SHOULD auto-generate example using first enum value", () => {
-      const el = defineElement({
-        name: "status",
-        description: "Status badge",
-        schema: z.object({ level: z.enum(["info", "warn", "error"]) }),
-        enrich: async (input) => input,
-      });
-
-      const result = generateElementPrompt([el]);
-
-      expect(result).toContain('"info"');
-    });
-
-    it("SHOULD list enum values in field description", () => {
-      const el = defineElement({
-        name: "status",
-        description: "Status badge",
-        schema: z.object({ level: z.enum(["info", "warn", "error"]) }),
-        enrich: async (input) => input,
-      });
-
-      const result = generateElementPrompt([el]);
-
-      expect(result).toContain('"info"');
-      expect(result).toContain('"warn"');
-      expect(result).toContain('"error"');
-      expect(result).toContain("one of:");
-    });
-  });
-
-  describe("GIVEN an element with nested object schema", () => {
-    it("SHOULD auto-generate nested example", () => {
-      const el = defineElement({
-        name: "widget",
-        description: "Widget",
-        schema: z.object({
-          config: z.object({ zoom: z.number() }),
-        }),
-        enrich: async (input) => input,
-      });
-
-      const result = generateElementPrompt([el]);
-
-      expect(result).toContain("zoom");
-    });
-  });
-
-  describe("GIVEN an element with array schema", () => {
-    it("SHOULD auto-generate array example", () => {
-      const el = defineElement({
-        name: "list",
-        description: "List",
-        schema: z.object({
-          items: z.array(z.string()),
-        }),
-        enrich: async (input) => input,
-      });
-
-      const result = generateElementPrompt([el]);
-
-      expect(result).toContain('["example"]');
-    });
-  });
-
   describe("GIVEN no elements", () => {
     it("SHOULD return just the header", () => {
       const result = generateElementPrompt([]);
@@ -167,45 +62,59 @@ describe("generateElementPrompt", () => {
     });
   });
 
-  describe("GIVEN an element with field types", () => {
-    it("SHOULD include type annotations for each field", () => {
+  describe("GIVEN an element with .describe() on fields", () => {
+    it("SHOULD include descriptions in the JSON Schema output", () => {
       const el = defineElement({
-        name: "profile",
-        description: "User profile",
+        name: "weather",
+        description: "Weather display",
         schema: z.object({
-          name: z.string(),
-          age: z.number(),
-          active: z.boolean(),
+          city: z.string().describe("City name"),
+          units: z.enum(["celsius", "fahrenheit"]).describe("Temperature unit"),
         }),
         enrich: async (input) => input,
       });
 
       const result = generateElementPrompt([el]);
 
-      expect(result).toMatch(/`name`[^`]*string/);
-      expect(result).toMatch(/`age`[^`]*number/);
-      expect(result).toMatch(/`active`[^`]*boolean/);
+      expect(result).toContain('"description": "City name"');
+      expect(result).toContain('"description": "Temperature unit"');
     });
   });
 
-  describe("GIVEN an element with constraints", () => {
-    it("SHOULD include min/max constraints in field descriptions", () => {
+  describe("GIVEN an element schema with enums and constraints", () => {
+    it("SHOULD include enum values and constraints in the JSON Schema output", () => {
       const el = defineElement({
         name: "bounded",
         description: "Bounded values",
         schema: z.object({
+          level: z.enum(["info", "warn", "error"]),
           name: z.string().min(1).max(100),
-          score: z.number().min(0).max(10),
         }),
         enrich: async (input) => input,
       });
 
       const result = generateElementPrompt([el]);
 
-      expect(result).toMatch(/`name`.*minLength: 1/);
-      expect(result).toMatch(/`name`.*maxLength: 100/);
-      expect(result).toMatch(/`score`.*min: 0/);
-      expect(result).toMatch(/`score`.*max: 10/);
+      expect(result).toContain('"enum"');
+      expect(result).toContain('"info"');
+      expect(result).toContain('"minLength": 1');
+      expect(result).toContain('"maxLength": 100');
+    });
+  });
+
+  describe("GIVEN the JSON Schema output", () => {
+    it("SHOULD strip $schema and additionalProperties", () => {
+      const el = defineElement({
+        name: "test",
+        description: "Test",
+        schema: z.object({ a: z.string() }),
+        enrich: async (input) => input,
+      });
+
+      const result = generateElementPrompt([el]);
+
+      expect(result).not.toContain("$schema");
+      expect(result).not.toContain("additionalProperties");
     });
   });
 });

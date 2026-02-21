@@ -10,7 +10,6 @@ export interface ElementDefinition<
   name: TName;
   description: string;
   schema: TInput;
-  example?: z.infer<TInput>;
   enrich: (input: z.infer<TInput>, deps: TDeps) => Promise<Record<string, unknown>>;
 }
 
