@@ -1,6 +1,7 @@
 import { createStreamProcessor } from "./stream-processor";
 import type { ElementUIMessageChunk } from "../core/types";
 import type { ElementStreamOptions } from "./types";
+import type { StreamProcessor } from "./stream-processor";
 
 const isAbortError = (error: unknown): boolean => {
   if (error instanceof DOMException) return error.name === "AbortError";
@@ -12,69 +13,48 @@ export const createElementStream = <TDeps>(
   options: ElementStreamOptions<TDeps>,
 ): ReadableStream<ElementUIMessageChunk> => {
   const { source, elements, deps, abortSignal, onEnrichError } = options;
-  let reader: ReadableStreamDefaultReader<ElementUIMessageChunk> | null = null;
-  let localAbortController: AbortController | null = null;
-  let activeReader: ReadableStreamDefaultReader<ElementUIMessageChunk> | null = null;
+  const abortController = new AbortController();
+  const signal = abortController.signal;
+  const processorRef: { current: StreamProcessor | null } = { current: null };
 
-  return new ReadableStream<ElementUIMessageChunk>({
-    start(controller) {
-      const abortController = new AbortController();
-      localAbortController = abortController;
-      const signal = abortController.signal;
+  const abortFromParentSignal = (): void => {
+    abortController.abort(new DOMException("Aborted", "AbortError"));
+  };
 
-      const abortFromParentSignal = (): void => {
-        abortController.abort(abortSignal?.reason);
-        void activeReader?.cancel(abortSignal?.reason).catch(() => undefined);
-      };
+  abortSignal?.addEventListener("abort", abortFromParentSignal, { once: true });
 
-      abortSignal?.addEventListener("abort", abortFromParentSignal, { once: true });
-
-      const processor = createStreamProcessor({
-        elements,
-        deps,
-        abortSignal: signal,
-        write: (chunk) => controller.enqueue(chunk),
-        onEnrichError,
-      });
-
-      const streamReader = source.getReader();
-      reader = streamReader;
-      activeReader = streamReader;
-
-      const pump = async (): Promise<void> => {
-        if (signal.aborted) {
-          await reader?.cancel(signal.reason).catch(() => undefined);
-          controller.close();
-          return;
-        }
-
-        const { done, value } = await streamReader.read();
-        if (done) {
-          await processor.flush(signal.aborted);
-          controller.close();
-          return;
-        }
-
-        processor.process(value);
-        return pump();
-      };
-
-      pump()
-        .catch((error) => {
-          if (signal.aborted || isAbortError(error)) {
-            return;
-          }
-
-          controller.error(error);
-        })
-        .finally(() => {
-          activeReader = null;
-          abortSignal?.removeEventListener("abort", abortFromParentSignal);
+  const transformed = new TransformStream<ElementUIMessageChunk, ElementUIMessageChunk>({
+    transform: (chunk, controller): void => {
+      const processor =
+        processorRef.current ??
+        createStreamProcessor({
+          elements,
+          deps,
+          abortSignal: signal,
+          write: (part) => {
+            if (signal.aborted) return;
+            controller.enqueue(part);
+          },
+          onEnrichError,
         });
+
+      processorRef.current = processor;
+      processor.process(chunk);
     },
-    cancel(reason) {
-      localAbortController?.abort(reason);
-      return reader?.cancel(reason) ?? Promise.resolve();
+    flush: async (): Promise<void> => {
+      await processorRef.current?.flush(signal.aborted);
     },
   });
+
+  void source
+    .pipeTo(transformed.writable, { signal })
+    .catch((error) => {
+      if (signal.aborted || isAbortError(error)) return;
+    })
+    .finally(() => {
+      abortController.abort();
+      abortSignal?.removeEventListener("abort", abortFromParentSignal);
+    });
+
+  return transformed.readable;
 };

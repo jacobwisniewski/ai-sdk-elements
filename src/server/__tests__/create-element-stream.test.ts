@@ -172,7 +172,7 @@ describe("createElementStream", () => {
   });
 
   describe("GIVEN an abort signal is provided", () => {
-    it("SHOULD stop output when the abort signal fires", async () => {
+    it("SHOULD abort stream reads when the abort signal fires", async () => {
       const slowElement = defineElement({
         name: "cite",
         description: "Slow citation",
@@ -208,8 +208,7 @@ describe("createElementStream", () => {
 
       abortController.abort("request-aborted");
 
-      const doneChunk = await reader.read();
-      expect(doneChunk.done).toBe(true);
+      await expect(reader.read()).rejects.toMatchObject({ name: "AbortError" });
     });
   });
 });
