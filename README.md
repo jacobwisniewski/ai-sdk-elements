@@ -83,11 +83,13 @@ export async function POST(req: Request) {
     model: openai("gpt-4.1"),
     system: `You are a helpful assistant.\n\n${elementPrompt}`,
     messages,
+    abortSignal: req.signal,
   });
 
   const enrichedStream = createElementStream({
     source: result.toUIMessageStream(),
     elements: [weatherElement],
+    abortSignal: req.signal,
   });
 
   return new Response(enrichedStream, {
@@ -123,6 +125,7 @@ const enrichedStream = createElementStream({
   source: aiSdkStream, // ReadableStream<UIMessageChunk> from the AI SDK
   elements: [weatherElement],
   deps: {}, // Dependency injection (API clients, DB connections, etc.)
+  abortSignal: req.signal,
   onEnrichError: (error, marker) => {
     console.error(`Failed to enrich ${marker.name}:`, error);
   },

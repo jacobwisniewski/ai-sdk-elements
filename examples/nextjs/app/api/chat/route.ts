@@ -40,12 +40,14 @@ export const POST = async (req: Request) => {
           }),
         },
         stopWhen: stepCountIs(3),
+        abortSignal: req.signal,
       });
 
       const elementStream = createElementStream({
         source: result.toUIMessageStream(),
         elements,
         deps: {},
+        abortSignal: req.signal,
       });
 
       writer.merge(elementStream);

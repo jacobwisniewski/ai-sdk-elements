@@ -113,4 +113,103 @@ describe("createElementStream", () => {
       expect(readyParts).toHaveLength(2);
     });
   });
+
+  describe("GIVEN the output stream is canceled", () => {
+    it("SHOULD stop emitting ready chunks after cancellation", async () => {
+      const slowElement = defineElement({
+        name: "cite",
+        description: "Slow citation",
+        schema: z.object({ url: z.string() }),
+        enrich: async (input) => {
+          await new Promise((resolve) => setTimeout(resolve, 100));
+          return { title: "Enriched", url: input.url };
+        },
+      });
+
+      const source = new ReadableStream<ElementUIMessageChunk>({
+        start(controller) {
+          controller.enqueue({
+            type: "text-delta",
+            delta: '@cite{"url":"https://example.com"}',
+            id: "t1",
+          });
+        },
+      });
+
+      const output = createElementStream({
+        source,
+        elements: [slowElement],
+        deps: undefined,
+      });
+
+      const reader = output.getReader();
+      const first = await reader.read();
+      expect(first.done).toBe(false);
+      expect(first.value).toEqual({
+        type: "text-delta",
+        delta: '@cite{"url":"https://example.com"}',
+        id: "t1",
+      });
+
+      const second = await reader.read();
+      expect(second.done).toBe(false);
+      expect(second.value).toEqual({
+        type: "data-element",
+        id: "el-0",
+        data: {
+          name: "cite",
+          input: { url: "https://example.com" },
+          state: "loading",
+        },
+      });
+
+      await reader.cancel("user-stop");
+      await new Promise((resolve) => setTimeout(resolve, 150));
+
+      const next = await reader.read();
+      expect(next.done).toBe(true);
+    });
+  });
+
+  describe("GIVEN an abort signal is provided", () => {
+    it("SHOULD stop output when the abort signal fires", async () => {
+      const slowElement = defineElement({
+        name: "cite",
+        description: "Slow citation",
+        schema: z.object({ url: z.string() }),
+        enrich: async (input) => {
+          await new Promise((resolve) => setTimeout(resolve, 100));
+          return { title: "Enriched", url: input.url };
+        },
+      });
+
+      const source = new ReadableStream<ElementUIMessageChunk>({
+        start(controller) {
+          controller.enqueue({
+            type: "text-delta",
+            delta: '@cite{"url":"https://example.com"}',
+            id: "t1",
+          });
+        },
+      });
+
+      const abortController = new AbortController();
+
+      const output = createElementStream({
+        source,
+        elements: [slowElement],
+        deps: undefined,
+        abortSignal: abortController.signal,
+      });
+
+      const reader = output.getReader();
+      await reader.read();
+      await reader.read();
+
+      abortController.abort("request-aborted");
+
+      const doneChunk = await reader.read();
+      expect(doneChunk.done).toBe(true);
+    });
+  });
 });

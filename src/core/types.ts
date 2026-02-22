@@ -12,7 +12,11 @@ export interface ElementDefinition<
   description: string;
   schema: TInput;
   outputSchema?: TOutput;
-  enrich: (input: z.infer<TInput>, deps: TDeps) => Promise<z.infer<TOutput>>;
+  enrich: (
+    input: z.infer<TInput>,
+    deps: TDeps,
+    options?: { readonly abortSignal: AbortSignal },
+  ) => Promise<z.infer<TOutput>>;
 }
 
 export interface ElementUIDefinition<
