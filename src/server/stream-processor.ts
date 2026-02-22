@@ -1,4 +1,5 @@
 import { findMarkers, parseMarker } from "../core/parse-markers";
+import { isAbortException } from "./is-abort-exception";
 import type {
   AnyElementDefinition,
   ElementPartData,
@@ -16,13 +17,14 @@ interface StreamProcessorState {
 export interface StreamProcessorDeps<TDeps> {
   readonly elements: ReadonlyArray<AnyElementDefinition>;
   readonly deps: TDeps;
+  readonly abortSignal: AbortSignal;
   readonly write: (chunk: ElementUIMessageChunk) => void;
   readonly onEnrichError?: (error: unknown, marker: ParsedMarker) => void;
 }
 
 export interface StreamProcessor {
   readonly process: (chunk: ElementUIMessageChunk) => void;
-  readonly flush: () => Promise<void>;
+  readonly flush: (aborted?: boolean) => Promise<void>;
 }
 
 const INITIAL_STATE: StreamProcessorState = {
@@ -34,10 +36,12 @@ const INITIAL_STATE: StreamProcessorState = {
 const createElementId = (index: number): string => `el-${index}`;
 
 const emitElementPart = (
+  abortSignal: AbortSignal,
   write: (chunk: ElementUIMessageChunk) => void,
   id: string,
   data: ElementPartData,
 ): void => {
+  if (abortSignal.aborted) return;
   write({ type: "data-element", id, data });
 };
 
@@ -50,9 +54,9 @@ const fireEnrichment = <TDeps>(
   if (!element) return Promise.resolve();
 
   return element
-    .enrich(parsed.input, processorDeps.deps)
+    .enrich(parsed.input, processorDeps.deps, { abortSignal: processorDeps.abortSignal })
     .then((data) => {
-      emitElementPart(processorDeps.write, elementId, {
+      emitElementPart(processorDeps.abortSignal, processorDeps.write, elementId, {
         name: parsed.name,
         input: parsed.input,
         state: "ready",
@@ -60,7 +64,9 @@ const fireEnrichment = <TDeps>(
       });
     })
     .catch((error: unknown) => {
-      emitElementPart(processorDeps.write, elementId, {
+      if (processorDeps.abortSignal.aborted || isAbortException(error)) return;
+
+      emitElementPart(processorDeps.abortSignal, processorDeps.write, elementId, {
         name: parsed.name,
         input: parsed.input,
         state: "error",
@@ -84,7 +90,7 @@ const processNewMarkers = <TDeps>(
 
     const elementId = createElementId(acc.processedCount);
 
-    emitElementPart(processorDeps.write, elementId, {
+    emitElementPart(processorDeps.abortSignal, processorDeps.write, elementId, {
       name: parsed.name,
       input: parsed.input,
       state: "loading",
@@ -140,6 +146,9 @@ export const createStreamProcessor = <TDeps>(
 
       stateRef.current = processTextDelta(stateRef.current, chunk.delta, processorDeps, pending);
     },
-    flush: () => Promise.all(pending).then(() => undefined),
+    flush: (aborted) =>
+      aborted || processorDeps.abortSignal.aborted
+        ? Promise.resolve()
+        : Promise.all(pending).then(() => undefined),
   };
 };

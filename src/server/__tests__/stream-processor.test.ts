@@ -32,6 +32,7 @@ const createTestDeps = (
   const deps: StreamProcessorDeps<undefined> = {
     elements,
     deps: undefined,
+    abortSignal: new AbortController().signal,
     write: (chunk) => chunks.push(chunk),
     ...overrides,
   };
@@ -250,6 +251,39 @@ describe("createStreamProcessor", () => {
           "type": "data-element",
         }
       `);
+    });
+  });
+
+  describe("GIVEN enrich supports abort signals", () => {
+    it("SHOULD forward abortSignal to enrich", async () => {
+      const controller = new AbortController();
+      const observedSignals: Array<AbortSignal> = [];
+
+      const abortAwareElement = defineElement({
+        name: "cite",
+        description: "Abort aware",
+        schema: z.object({ url: z.string() }),
+        enrich: async (input, _deps, options) => {
+          if (options) observedSignals.push(options.abortSignal);
+          return { title: "ok", url: input.url };
+        },
+      });
+
+      const chunks: Array<ElementUIMessageChunk> = [];
+      const processor = createStreamProcessor({
+        elements: [abortAwareElement],
+        deps: undefined,
+        abortSignal: controller.signal,
+        write: (chunk) => chunks.push(chunk),
+      });
+
+      processor.process({ type: "text-delta", delta: '@cite{"url":"https://x.com"}', id: "t1" });
+      await processor.flush();
+
+      expect(observedSignals).toHaveLength(1);
+      expect(observedSignals[0]).toBe(controller.signal);
+      const readyParts = chunks.filter((c) => isElementChunk(c) && c.data.state === "ready");
+      expect(readyParts).toHaveLength(1);
     });
   });
 });
