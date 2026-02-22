@@ -1,4 +1,5 @@
 import { findMarkers, parseMarker } from "../core/parse-markers";
+import { isAbortException } from "./is-abort-exception";
 import type {
   AnyElementDefinition,
   ElementPartData,
@@ -44,12 +45,6 @@ const emitElementPart = (
   write({ type: "data-element", id, data });
 };
 
-const isAbortError = (error: unknown): boolean => {
-  if (error instanceof DOMException) return error.name === "AbortError";
-  if (error instanceof Error) return error.name === "AbortError";
-  return false;
-};
-
 const fireEnrichment = <TDeps>(
   parsed: ParsedMarker,
   elementId: string,
@@ -69,7 +64,7 @@ const fireEnrichment = <TDeps>(
       });
     })
     .catch((error: unknown) => {
-      if (processorDeps.abortSignal.aborted || isAbortError(error)) return;
+      if (processorDeps.abortSignal.aborted || isAbortException(error)) return;
 
       emitElementPart(processorDeps.abortSignal, processorDeps.write, elementId, {
         name: parsed.name,

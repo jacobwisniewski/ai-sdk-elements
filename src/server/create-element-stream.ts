@@ -2,12 +2,7 @@ import { createStreamProcessor } from "./stream-processor";
 import type { ElementUIMessageChunk } from "../core/types";
 import type { ElementStreamOptions } from "./types";
 import type { StreamProcessor } from "./stream-processor";
-
-const isAbortError = (error: unknown): boolean => {
-  if (error instanceof DOMException) return error.name === "AbortError";
-  if (error instanceof Error) return error.name === "AbortError";
-  return false;
-};
+import { isAbortException } from "./is-abort-exception";
 
 export const createElementStream = <TDeps>(
   options: ElementStreamOptions<TDeps>,
@@ -49,7 +44,7 @@ export const createElementStream = <TDeps>(
   void source
     .pipeTo(transformed.writable, { signal })
     .catch((error) => {
-      if (signal.aborted || isAbortError(error)) return;
+      if (signal.aborted || isAbortException(error)) return;
     })
     .finally(() => {
       abortController.abort();
