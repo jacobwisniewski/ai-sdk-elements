@@ -10,16 +10,22 @@ import type { ElementPartData } from "../../core/types";
 
 const citeUI = defineElementUI({
   name: "cite",
-  dataSchema: z.object({ title: z.string(), url: z.string() }),
-  render: (data) => createElement("a", { href: data.url }, data.title),
-  loading: () => createElement("span", null, "Loading..."),
-  error: (msg) => createElement("span", { className: "error" }, msg),
+  outputSchema: z.object({ title: z.string(), url: z.string() }),
+  render: (state) => {
+    if (state.state === "loading") return createElement("span", null, "Loading...");
+    if (state.state === "error")
+      return createElement("span", { className: "error" }, state.errorText);
+    return createElement("a", { href: state.output.url }, state.output.title);
+  },
 });
 
 const mapUI = defineElementUI({
   name: "map",
-  dataSchema: z.object({ lat: z.number(), lng: z.number() }),
-  render: (data) => createElement("div", null, `${data.lat},${data.lng}`),
+  outputSchema: z.object({ lat: z.number(), lng: z.number() }),
+  render: (state) => {
+    if (state.state !== "ready") return null;
+    return createElement("div", null, `${state.output.lat},${state.output.lng}`);
+  },
 });
 
 const makeDataPart = (id: string, data: ElementPartData): UIMessage["parts"][number] => ({

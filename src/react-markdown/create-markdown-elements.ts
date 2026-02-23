@@ -67,15 +67,28 @@ const createElementComponent =
     const partData = findElementPart(parts, elementId);
 
     if (!partData || partData.state === "loading") {
-      return elementDef.loading?.() ?? null;
+      return elementDef.render({
+        state: "loading",
+        input: partData?.input ?? {},
+      });
     }
 
     if (partData.state === "error") {
-      return elementDef.error?.(partData.error) ?? null;
+      return elementDef.render({
+        state: "error",
+        input: partData.input,
+        errorText: partData.error,
+      });
     }
 
-    const parsed = elementDef.dataSchema.safeParse(partData.data);
-    return parsed.success ? elementDef.render(parsed.data) : null;
+    const parsed = elementDef.outputSchema.safeParse(partData.data);
+    if (!parsed.success) return null;
+
+    return elementDef.render({
+      state: "ready",
+      input: partData.input,
+      output: parsed.data,
+    });
   };
 
 const buildComponents = (

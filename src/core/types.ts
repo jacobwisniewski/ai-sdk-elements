@@ -17,15 +17,18 @@ export interface ElementDefinition<
   ) => Promise<z.infer<TOutput>>;
 }
 
+export type ElementUIState<TOutput> =
+  | { state: "loading"; input: Record<string, unknown> }
+  | { state: "error"; input: Record<string, unknown>; errorText: string }
+  | { state: "ready"; input: Record<string, unknown>; output: TOutput };
+
 export interface ElementUIDefinition<
   TName extends string = string,
-  TData extends z.ZodType = z.ZodType,
+  TOutput extends z.ZodType = z.ZodType,
 > {
   name: TName;
-  dataSchema: TData;
-  render: (data: z.infer<TData>) => ReactNode;
-  loading?: () => ReactNode;
-  error?: (error: string) => ReactNode;
+  outputSchema: TOutput;
+  render: (state: ElementUIState<z.infer<TOutput>>) => ReactNode;
 }
 
 export interface MarkerMatch {
