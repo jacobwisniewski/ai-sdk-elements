@@ -76,7 +76,8 @@ export type ElementUIMessageChunk = UIMessageChunk<unknown, ElementDataTypes>;
 export type AnyElementDefinition = ElementDefinition<
   string,
   z.ZodType,
-  unknown,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  any,
   z.ZodType<Record<string, unknown>>
 >;
 export type AnyElementUIDefinition = ElementUIDefinition<string, z.ZodType>;

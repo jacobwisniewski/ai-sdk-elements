@@ -28,6 +28,16 @@
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "server": [
+        "./dist/server.d.ts"
+      ],
+      "react": [
+        "./dist/react.d.ts"
+      ]
+    }
+  },
   "exports": {
     "./package.json": "./package.json",
     ".": {
@@ -59,16 +69,6 @@
         "types": "./dist/react.d.cts",
         "default": "./dist/react.cjs"
       }
-    },
-    "./react/streamdown": {
-      "import": {
-        "types": "./dist/react-markdown.d.ts",
-        "default": "./dist/react-markdown.js"
-      },
-      "require": {
-        "types": "./dist/react-markdown.d.cts",
-        "default": "./dist/react-markdown.cjs"
-      }
     }
   },
   "scripts": {
@@ -87,7 +87,7 @@
     "@testing-library/react": "^16.3.2",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
-    "ai": "^5.0.0",
+    "ai": "^6.0.0",
     "jsdom": "^28.1.0",
     "oxfmt": "^0.34.0",
     "oxlint": "^1.49.0",
@@ -99,7 +99,7 @@
     "zod": "^4.0.0"
   },
   "peerDependencies": {
-    "ai": "^5.0.0",
+    "ai": "^5.0.0 || ^6.0.0",
     "react": "^18 || ^19",
     "zod": "^4.0"
   },

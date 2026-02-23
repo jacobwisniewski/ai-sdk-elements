@@ -6,7 +6,6 @@ export default defineConfig([
       index: "src/index.ts",
       server: "src/server.ts",
       react: "src/react.ts",
-      "react-markdown": "src/react-markdown.ts",
     },
     format: ["cjs", "esm"],
     dts: true,
