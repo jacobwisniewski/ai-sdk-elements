@@ -1,6 +1,6 @@
 {
   "name": "ai-sdk-elements",
-  "version": "0.0.2",
+  "version": "0.1.0",
   "description": "Render rich UI elements inline with LLM-streamed text. Server-side enrichment and client-side rendering for the Vercel AI SDK.",
   "keywords": [
     "ai",
