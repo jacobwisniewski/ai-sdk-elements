@@ -5,7 +5,6 @@ import type { UIDataTypes, UIMessage, UIMessageChunk } from "ai";
 export interface ElementDefinition<
   TName extends string = string,
   TInput extends z.ZodType = z.ZodType,
-  TDeps = unknown,
   TOutput extends z.ZodType = z.ZodType<Record<string, unknown>>,
 > {
   name: TName;
@@ -14,7 +13,6 @@ export interface ElementDefinition<
   outputSchema?: TOutput;
   enrich: (
     input: z.infer<TInput>,
-    deps: TDeps,
     options?: { readonly abortSignal: AbortSignal },
   ) => Promise<z.infer<TOutput>>;
 }
@@ -76,8 +74,7 @@ export type ElementUIMessageChunk = UIMessageChunk<unknown, ElementDataTypes>;
 export type AnyElementDefinition = ElementDefinition<
   string,
   z.ZodType,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  any,
   z.ZodType<Record<string, unknown>>
 >;
+
 export type AnyElementUIDefinition = ElementUIDefinition<string, z.ZodType>;

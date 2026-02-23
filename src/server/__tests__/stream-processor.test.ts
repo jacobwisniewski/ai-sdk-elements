@@ -26,12 +26,11 @@ const failElement = defineElement({
 
 const createTestDeps = (
   elements: ReadonlyArray<AnyElementDefinition> = [citeElement],
-  overrides: Partial<StreamProcessorDeps<undefined>> = {},
-): { deps: StreamProcessorDeps<undefined>; chunks: Array<ElementUIMessageChunk> } => {
+  overrides: Partial<StreamProcessorDeps> = {},
+): { deps: StreamProcessorDeps; chunks: Array<ElementUIMessageChunk> } => {
   const chunks: Array<ElementUIMessageChunk> = [];
-  const deps: StreamProcessorDeps<undefined> = {
+  const deps: StreamProcessorDeps = {
     elements,
-    deps: undefined,
     abortSignal: new AbortController().signal,
     write: (chunk) => chunks.push(chunk),
     ...overrides,
@@ -263,7 +262,7 @@ describe("createStreamProcessor", () => {
         name: "cite",
         description: "Abort aware",
         schema: z.object({ url: z.string() }),
-        enrich: async (input, _deps, options) => {
+        enrich: async (input, options) => {
           if (options) observedSignals.push(options.abortSignal);
           return { title: "ok", url: input.url };
         },
@@ -272,7 +271,6 @@ describe("createStreamProcessor", () => {
       const chunks: Array<ElementUIMessageChunk> = [];
       const processor = createStreamProcessor({
         elements: [abortAwareElement],
-        deps: undefined,
         abortSignal: controller.signal,
         write: (chunk) => chunks.push(chunk),
       });

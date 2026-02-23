@@ -4,10 +4,10 @@ import type { ElementStreamOptions } from "./types";
 import type { StreamProcessor } from "./stream-processor";
 import { isAbortException } from "./is-abort-exception";
 
-export const createElementStream = <TDeps>(
-  options: ElementStreamOptions<TDeps>,
+export const createElementStream = (
+  options: ElementStreamOptions,
 ): ReadableStream<ElementUIMessageChunk> => {
-  const { source, elements, deps, abortSignal, onEnrichError } = options;
+  const { source, elements, abortSignal, onEnrichError } = options;
   const abortController = new AbortController();
   const signal = abortController.signal;
   const processorRef: { current: StreamProcessor | null } = { current: null };
@@ -24,7 +24,6 @@ export const createElementStream = <TDeps>(
         processorRef.current ??
         createStreamProcessor({
           elements,
-          deps,
           abortSignal: signal,
           write: (part) => {
             if (signal.aborted) return;
