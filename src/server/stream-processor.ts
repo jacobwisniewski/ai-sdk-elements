@@ -14,9 +14,8 @@ interface StreamProcessorState {
   readonly knownMarkerEnds: ReadonlySet<number>;
 }
 
-export interface StreamProcessorDeps<TDeps> {
+export interface StreamProcessorDeps {
   readonly elements: ReadonlyArray<AnyElementDefinition>;
-  readonly deps: TDeps;
   readonly abortSignal: AbortSignal;
   readonly write: (chunk: ElementUIMessageChunk) => void;
   readonly onEnrichError?: (error: unknown, marker: ParsedMarker) => void;
@@ -45,16 +44,16 @@ const emitElementPart = (
   write({ type: "data-element", id, data });
 };
 
-const fireEnrichment = <TDeps>(
+const fireEnrichment = (
   parsed: ParsedMarker,
   elementId: string,
-  processorDeps: StreamProcessorDeps<TDeps>,
+  processorDeps: StreamProcessorDeps,
 ): Promise<void> => {
   const element = processorDeps.elements.find((el) => el.name === parsed.name);
   if (!element) return Promise.resolve();
 
   return element
-    .enrich(parsed.input, processorDeps.deps, { abortSignal: processorDeps.abortSignal })
+    .enrich(parsed.input, { abortSignal: processorDeps.abortSignal })
     .then((data) => {
       emitElementPart(processorDeps.abortSignal, processorDeps.write, elementId, {
         name: parsed.name,
@@ -76,10 +75,10 @@ const fireEnrichment = <TDeps>(
     });
 };
 
-const processNewMarkers = <TDeps>(
+const processNewMarkers = (
   matches: ReadonlyArray<MarkerMatch>,
   state: StreamProcessorState,
-  processorDeps: StreamProcessorDeps<TDeps>,
+  processorDeps: StreamProcessorDeps,
   pending: Array<Promise<void>>,
 ): StreamProcessorState =>
   matches.reduce<StreamProcessorState>((acc, match) => {
@@ -119,10 +118,10 @@ const trimBuffer = (
   };
 };
 
-const processTextDelta = <TDeps>(
+const processTextDelta = (
   state: StreamProcessorState,
   delta: string,
-  processorDeps: StreamProcessorDeps<TDeps>,
+  processorDeps: StreamProcessorDeps,
   pending: Array<Promise<void>>,
 ): StreamProcessorState => {
   const newBuffer = state.buffer + delta;
@@ -132,9 +131,7 @@ const processTextDelta = <TDeps>(
   return trimBuffer(afterMarkers, matches);
 };
 
-export const createStreamProcessor = <TDeps>(
-  processorDeps: StreamProcessorDeps<TDeps>,
-): StreamProcessor => {
+export const createStreamProcessor = (processorDeps: StreamProcessorDeps): StreamProcessor => {
   const stateRef = { current: INITIAL_STATE };
   const pending: Array<Promise<void>> = [];
 

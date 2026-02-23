@@ -51,7 +51,6 @@ describe("createElementStream", () => {
       const output = createElementStream({
         source,
         elements: [slowElement],
-        deps: undefined,
       });
 
       const chunks = await collectStream(output);
@@ -104,7 +103,6 @@ describe("createElementStream", () => {
       const output = createElementStream({
         source,
         elements: [slowElement],
-        deps: undefined,
       });
 
       const chunks = await collectStream(output);
@@ -139,7 +137,6 @@ describe("createElementStream", () => {
       const output = createElementStream({
         source,
         elements: [slowElement],
-        deps: undefined,
       });
 
       const reader = output.getReader();
@@ -198,7 +195,6 @@ describe("createElementStream", () => {
       const output = createElementStream({
         source,
         elements: [slowElement],
-        deps: undefined,
         abortSignal: abortController.signal,
       });
 
