@@ -111,6 +111,7 @@ describe("parseMarker", () => {
     name: "cite",
     description: "Citation",
     schema: z.object({ url: z.string() }),
+    example: { url: "https://example.com" },
     enrich: async (input) => input,
   });
 
@@ -180,12 +181,14 @@ describe("parseMarkers", () => {
       name: "cite",
       description: "Citation",
       schema: z.object({ url: z.string() }),
+      example: { url: "https://example.com" },
       enrich: async (input) => input,
     }),
     defineElement({
       name: "map",
       description: "Map",
       schema: z.object({ lat: z.number(), lng: z.number() }),
+      example: { lat: 0, lng: 0 },
       enrich: async (input) => input,
     }),
   ];

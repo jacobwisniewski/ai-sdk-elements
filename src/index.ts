@@ -18,4 +18,7 @@ export type {
   ElementUIMessageChunk,
   AnyElementDefinition,
   AnyElementUIDefinition,
+  ElementDataPartFromDefinition,
+  ElementPartFromDefinition,
+  ElementUIState,
 } from "./core/types";

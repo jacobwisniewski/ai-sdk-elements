@@ -31,6 +31,7 @@ describe("createElementStream", () => {
         name: "cite",
         description: "Slow citation",
         schema: z.object({ url: z.string() }),
+        example: { url: "https://example.com" },
         enrich: async (input) => {
           await new Promise((resolve) => setTimeout(resolve, 100));
           return { title: "Enriched", url: input.url };
@@ -83,6 +84,7 @@ describe("createElementStream", () => {
         name: "cite",
         description: "Slow citation",
         schema: z.object({ url: z.string() }),
+        example: { url: "https://example.com" },
         enrich: async (input) => {
           await new Promise((resolve) => setTimeout(resolve, 50));
           return { title: `Title for ${input.url}`, url: input.url };
@@ -118,6 +120,7 @@ describe("createElementStream", () => {
         name: "cite",
         description: "Slow citation",
         schema: z.object({ url: z.string() }),
+        example: { url: "https://example.com" },
         enrich: async (input) => {
           await new Promise((resolve) => setTimeout(resolve, 100));
           return { title: "Enriched", url: input.url };
@@ -174,6 +177,7 @@ describe("createElementStream", () => {
         name: "cite",
         description: "Slow citation",
         schema: z.object({ url: z.string() }),
+        example: { url: "https://example.com" },
         enrich: async (input) => {
           await new Promise((resolve) => setTimeout(resolve, 100));
           return { title: "Enriched", url: input.url };

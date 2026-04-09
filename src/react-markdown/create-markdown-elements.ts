@@ -3,18 +3,24 @@ import type { UIMessage } from "ai";
 import { isDataUIPart } from "ai";
 import { findMarkers } from "../core/parse-markers";
 import type { AnyElementUIDefinition, ElementPartData, MarkerMatch } from "../core/types";
+import { useElementParts, ElementPartsProvider } from "./element-parts-context";
 
-interface UseMarkdownElementsOptions {
+interface UseMarkdownTextOptions {
   readonly text: string;
   readonly parts: UIMessage["parts"];
   readonly elements: ReadonlyArray<AnyElementUIDefinition>;
 }
 
-interface UseMarkdownElementsReturn {
+interface UseMarkdownTextReturn {
   readonly processedText: string;
-  readonly components: Record<string, FunctionComponent<Record<string, unknown>>>;
   readonly elementNames: ReadonlyArray<string>;
   readonly hasLoadingElements: boolean;
+}
+
+interface MarkdownRegistry {
+  readonly components: Record<string, FunctionComponent<Record<string, unknown>>>;
+  readonly ElementsProvider: typeof ElementPartsProvider;
+  readonly elementNames: ReadonlyArray<string>;
 }
 
 const isElementDataPart = (
@@ -54,12 +60,11 @@ const replaceMarkersWithHtml = (
     return acc.slice(0, marker.start) + htmlTag + acc.slice(marker.end);
   }, text);
 
-const createElementComponent =
-  (
-    elementDef: AnyElementUIDefinition,
-    parts: UIMessage["parts"],
-  ): FunctionComponent<Record<string, unknown>> =>
-  (props: Record<string, unknown>) => {
+const createElementComponent = (
+  elementDef: AnyElementUIDefinition,
+): FunctionComponent<Record<string, unknown>> => {
+  const Component = (props: Record<string, unknown>) => {
+    const { parts } = useElementParts();
     const elementId =
       typeof props["data-element-id"] === "string" ? props["data-element-id"] : undefined;
     if (!elementId) return null;
@@ -91,17 +96,27 @@ const createElementComponent =
     });
   };
 
-const buildComponents = (
+  Component.displayName = `ElementWrapper(${elementDef.name})`;
+  return Component;
+};
+
+export const createMarkdownRegistry = (
   elements: ReadonlyArray<AnyElementUIDefinition>,
-  parts: UIMessage["parts"],
-): Record<string, FunctionComponent<Record<string, unknown>>> =>
-  Object.fromEntries(
-    elements.map((elementDef) => [elementDef.name, createElementComponent(elementDef, parts)]),
+): MarkdownRegistry => {
+  const components = Object.fromEntries(
+    elements.map((elementDef) => [elementDef.name, createElementComponent(elementDef)]),
   );
 
-export const useMarkdownElements = (
-  options: UseMarkdownElementsOptions,
-): UseMarkdownElementsReturn => {
+  const elementNames = [...new Set(elements.map((el) => el.name))];
+
+  return {
+    components,
+    ElementsProvider: ElementPartsProvider,
+    elementNames,
+  };
+};
+
+export const useMarkdownText = (options: UseMarkdownTextOptions): UseMarkdownTextReturn => {
   const { text, parts, elements } = options;
 
   return useMemo(() => {
@@ -109,7 +124,7 @@ export const useMarkdownElements = (
     const elementNames = [...new Set(elements.map((el) => el.name))];
 
     if (markers.length === 0) {
-      return { processedText: text, components: {}, elementNames, hasLoadingElements: false };
+      return { processedText: text, elementNames, hasLoadingElements: false };
     }
 
     const hasLoadingElements = markers.some(
@@ -118,7 +133,6 @@ export const useMarkdownElements = (
 
     return {
       processedText: replaceMarkersWithHtml(text, markers, parts),
-      components: buildComponents(elements, parts),
       elementNames,
       hasLoadingElements,
     };

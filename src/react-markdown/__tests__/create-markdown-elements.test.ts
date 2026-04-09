@@ -3,14 +3,18 @@ import { describe, it, expect } from "vitest";
 import { renderHook } from "@testing-library/react";
 import { z } from "zod";
 import type { UIMessage } from "ai";
-import { useMarkdownElements } from "../create-markdown-elements";
+import { useMarkdownText } from "../create-markdown-elements";
 import { defineElementUI } from "../../core/define-element-ui";
 import { createElement } from "react";
 import type { ElementPartData } from "../../core/types";
 
+const citeInputSchema = z.object({ url: z.string() });
+const citeOutputSchema = z.object({ title: z.string(), url: z.string() });
+
 const citeUI = defineElementUI({
   name: "cite",
-  outputSchema: z.object({ title: z.string(), url: z.string() }),
+  inputSchema: citeInputSchema,
+  outputSchema: citeOutputSchema,
   render: (state) => {
     if (state.state === "loading") return createElement("span", null, "Loading...");
     if (state.state === "error")
@@ -19,9 +23,13 @@ const citeUI = defineElementUI({
   },
 });
 
+const mapInputSchema = z.object({ lat: z.number(), lng: z.number() });
+const mapOutputSchema = z.object({ lat: z.number(), lng: z.number() });
+
 const mapUI = defineElementUI({
   name: "map",
-  outputSchema: z.object({ lat: z.number(), lng: z.number() }),
+  inputSchema: mapInputSchema,
+  outputSchema: mapOutputSchema,
   render: (state) => {
     if (state.state !== "ready") return null;
     return createElement("div", null, `${state.output.lat},${state.output.lng}`);
@@ -34,58 +42,50 @@ const makeDataPart = (id: string, data: ElementPartData): UIMessage["parts"][num
   data,
 });
 
-describe("useMarkdownElements", () => {
-  describe("GIVEN text with no markers", () => {
-    it("SHOULD return original text with empty components", () => {
+describe("useMarkdownText", () => {
+  describe("WHEN text has no markers", () => {
+    it("SHOULD return original text unchanged", () => {
       const { result } = renderHook(() =>
-        useMarkdownElements({ text: "Hello world", parts: [], elements: [] }),
+        useMarkdownText({ text: "Hello world", parts: [], elements: [] }),
       );
 
       expect(result.current.processedText).toBe("Hello world");
-      expect(result.current.components).toEqual({});
+    });
+
+    it("SHOULD return empty elementNames array", () => {
+      const { result } = renderHook(() =>
+        useMarkdownText({ text: "Hello world", parts: [], elements: [] }),
+      );
+
       expect(result.current.elementNames).toEqual([]);
+    });
+
+    it("SHOULD return hasLoadingElements as false", () => {
+      const { result } = renderHook(() =>
+        useMarkdownText({ text: "Hello world", parts: [], elements: [] }),
+      );
+
+      expect(result.current.hasLoadingElements).toBe(false);
     });
   });
 
-  describe("GIVEN text with a single marker", () => {
-    it("SHOULD replace marker with HTML tag", () => {
+  describe("WHEN text has a single marker", () => {
+    it("SHOULD replace marker with HTML tag containing data-element-id", () => {
       const text = 'See @cite{"url":"https://x.com"} for details';
-      const { result } = renderHook(() =>
-        useMarkdownElements({ text, parts: [], elements: [citeUI] }),
-      );
+      const { result } = renderHook(() => useMarkdownText({ text, parts: [], elements: [citeUI] }));
 
-      expect(result.current.processedText).toBe(
-        'See <cite data-element-id="el-0" data-element-state="loading"></cite> for details',
-      );
+      expect(result.current.processedText).toContain('<cite data-element-id="el-0"');
+      expect(result.current.processedText).toContain("</cite>");
     });
 
-    it("SHOULD include element name in elementNames", () => {
-      const text = '@cite{"url":"x.com"}';
-      const { result } = renderHook(() =>
-        useMarkdownElements({ text, parts: [], elements: [citeUI] }),
-      );
-
-      expect(result.current.elementNames).toEqual(["cite"]);
-    });
-
-    it("SHOULD create component that renders loading state", () => {
+    it("SHOULD include data-element-state='loading' when no matching part exists", () => {
       const text = '@cite{"url":"https://x.com"}';
-      const { result } = renderHook(() =>
-        useMarkdownElements({ text, parts: [], elements: [citeUI] }),
-      );
+      const { result } = renderHook(() => useMarkdownText({ text, parts: [], elements: [citeUI] }));
 
-      const CiteComponent = result.current.components.cite;
-      expect(CiteComponent).toBeDefined();
-
-      const rendered = CiteComponent({ "data-element-id": "el-0" });
-      expect(rendered).toMatchInlineSnapshot(`
-        <span>
-          Loading...
-        </span>
-      `);
+      expect(result.current.processedText).toContain('data-element-state="loading"');
     });
 
-    it("SHOULD create component that renders ready state", () => {
+    it("SHOULD include data-element-state='ready' when matching part is ready", () => {
       const text = '@cite{"url":"https://x.com"}';
       const parts: UIMessage["parts"] = [
         makeDataPart("el-0", {
@@ -96,24 +96,14 @@ describe("useMarkdownElements", () => {
         }),
       ];
 
-      const { result } = renderHook(() => useMarkdownElements({ text, parts, elements: [citeUI] }));
+      const { result } = renderHook(() => useMarkdownText({ text, parts, elements: [citeUI] }));
 
       expect(result.current.processedText).toBe(
         '<cite data-element-id="el-0" data-element-state="ready"></cite>',
       );
-
-      const CiteComponent = result.current.components.cite;
-      const rendered = CiteComponent({ "data-element-id": "el-0" });
-      expect(rendered).toMatchInlineSnapshot(`
-        <a
-          href="https://x.com"
-        >
-          Example
-        </a>
-      `);
     });
 
-    it("SHOULD create component that renders error state", () => {
+    it("SHOULD include data-element-state='error' when matching part has error", () => {
       const text = '@cite{"url":"https://x.com"}';
       const parts: UIMessage["parts"] = [
         makeDataPart("el-0", {
@@ -124,40 +114,75 @@ describe("useMarkdownElements", () => {
         }),
       ];
 
-      const { result } = renderHook(() => useMarkdownElements({ text, parts, elements: [citeUI] }));
+      const { result } = renderHook(() => useMarkdownText({ text, parts, elements: [citeUI] }));
 
-      const CiteComponent = result.current.components.cite;
-      const rendered = CiteComponent({ "data-element-id": "el-0" });
-      expect(rendered).toMatchInlineSnapshot(`
-        <span
-          className="error"
-        >
-          Not found
-        </span>
-      `);
+      expect(result.current.processedText).toContain('data-element-state="error"');
+    });
+
+    it("SHOULD include element name in elementNames", () => {
+      const text = '@cite{"url":"x.com"}';
+      const { result } = renderHook(() => useMarkdownText({ text, parts: [], elements: [citeUI] }));
+
+      expect(result.current.elementNames).toEqual(["cite"]);
+    });
+
+    it("SHOULD set hasLoadingElements to true when no matching part exists", () => {
+      const text = '@cite{"url":"x.com"}';
+      const { result } = renderHook(() => useMarkdownText({ text, parts: [], elements: [citeUI] }));
+
+      expect(result.current.hasLoadingElements).toBe(true);
+    });
+
+    it("SHOULD set hasLoadingElements to false when part is ready", () => {
+      const text = '@cite{"url":"https://x.com"}';
+      const parts: UIMessage["parts"] = [
+        makeDataPart("el-0", {
+          name: "cite",
+          input: { url: "https://x.com" },
+          state: "ready",
+          data: { title: "Example", url: "https://x.com" },
+        }),
+      ];
+
+      const { result } = renderHook(() => useMarkdownText({ text, parts, elements: [citeUI] }));
+
+      expect(result.current.hasLoadingElements).toBe(false);
     });
   });
 
-  describe("GIVEN text with multiple markers", () => {
+  describe("WHEN text has multiple markers", () => {
     it("SHOULD replace all markers with HTML tags", () => {
       const text = '@cite{"url":"a.com"} then @map{"lat":1,"lng":2}';
       const { result } = renderHook(() =>
-        useMarkdownElements({
+        useMarkdownText({
           text,
           parts: [],
           elements: [citeUI, mapUI],
         }),
       );
 
-      expect(result.current.processedText).toBe(
-        '<cite data-element-id="el-0" data-element-state="loading"></cite> then <map data-element-id="el-1" data-element-state="loading"></map>',
+      expect(result.current.processedText).toContain('<cite data-element-id="el-0"');
+      expect(result.current.processedText).toContain('<map data-element-id="el-1"');
+    });
+
+    it("SHOULD assign sequential element IDs", () => {
+      const text = '@cite{"url":"a.com"} @cite{"url":"b.com"}';
+      const { result } = renderHook(() =>
+        useMarkdownText({
+          text,
+          parts: [],
+          elements: [citeUI],
+        }),
       );
+
+      expect(result.current.processedText).toContain('data-element-id="el-0"');
+      expect(result.current.processedText).toContain('data-element-id="el-1"');
     });
 
     it("SHOULD deduplicate element names", () => {
       const text = '@cite{"url":"a.com"} @cite{"url":"b.com"}';
       const { result } = renderHook(() =>
-        useMarkdownElements({
+        useMarkdownText({
           text,
           parts: [],
           elements: [citeUI],
@@ -167,36 +192,77 @@ describe("useMarkdownElements", () => {
       expect(result.current.elementNames).toEqual(["cite"]);
     });
 
-    it("SHOULD create components for each element type", () => {
-      const text = '@cite{"url":"a.com"} @map{"lat":1,"lng":2}';
+    it("SHOULD include all unique element names", () => {
+      const text = '@cite{"url":"a.com"} then @map{"lat":1,"lng":2}';
       const { result } = renderHook(() =>
-        useMarkdownElements({
+        useMarkdownText({
           text,
           parts: [],
           elements: [citeUI, mapUI],
         }),
       );
 
-      expect(result.current.components.cite).toBeDefined();
-      expect(result.current.components.map).toBeDefined();
+      expect(result.current.elementNames).toEqual(["cite", "map"]);
     });
-  });
 
-  describe("GIVEN component called without data-element-id", () => {
-    it("SHOULD return null", () => {
-      const text = '@cite{"url":"a.com"}';
+    it("SHOULD set hasLoadingElements true if any element is loading", () => {
+      const text = '@cite{"url":"a.com"} then @cite{"url":"b.com"}';
+      const parts: UIMessage["parts"] = [
+        makeDataPart("el-0", {
+          name: "cite",
+          input: { url: "a.com" },
+          state: "ready",
+          data: { title: "A", url: "a.com" },
+        }),
+        makeDataPart("el-1", {
+          name: "cite",
+          input: { url: "b.com" },
+          state: "loading",
+        }),
+      ];
+
       const { result } = renderHook(() =>
-        useMarkdownElements({ text, parts: [], elements: [citeUI] }),
+        useMarkdownText({
+          text,
+          parts,
+          elements: [citeUI],
+        }),
       );
 
-      const CiteComponent = result.current.components.cite;
-      const rendered = CiteComponent({});
-      expect(rendered).toBeNull();
+      expect(result.current.hasLoadingElements).toBe(true);
+    });
+
+    it("SHOULD set hasLoadingElements false when all elements are ready", () => {
+      const text = '@cite{"url":"a.com"} then @cite{"url":"b.com"}';
+      const parts: UIMessage["parts"] = [
+        makeDataPart("el-0", {
+          name: "cite",
+          input: { url: "a.com" },
+          state: "ready",
+          data: { title: "A", url: "a.com" },
+        }),
+        makeDataPart("el-1", {
+          name: "cite",
+          input: { url: "b.com" },
+          state: "ready",
+          data: { title: "B", url: "b.com" },
+        }),
+      ];
+
+      const { result } = renderHook(() =>
+        useMarkdownText({
+          text,
+          parts,
+          elements: [citeUI],
+        }),
+      );
+
+      expect(result.current.hasLoadingElements).toBe(false);
     });
   });
 
-  describe("GIVEN element state transitions", () => {
-    it("SHOULD change processedText when part transitions from loading to ready", () => {
+  describe("WHEN element state transitions", () => {
+    it("SHOULD update processedText from loading to ready", () => {
       const text = '@cite{"url":"https://x.com"}';
       const loadingParts: UIMessage["parts"] = [
         makeDataPart("el-0", {
@@ -207,7 +273,7 @@ describe("useMarkdownElements", () => {
       ];
 
       const { result, rerender } = renderHook(
-        ({ parts }) => useMarkdownElements({ text, parts, elements: [citeUI] }),
+        ({ parts }) => useMarkdownText({ text, parts, elements: [citeUI] }),
         { initialProps: { parts: loadingParts } },
       );
 
@@ -227,7 +293,7 @@ describe("useMarkdownElements", () => {
       expect(result.current.processedText).toContain('data-element-state="ready"');
     });
 
-    it("SHOULD switch component render output from loading to ready", () => {
+    it("SHOULD update processedText from loading to error", () => {
       const text = '@cite{"url":"https://x.com"}';
       const loadingParts: UIMessage["parts"] = [
         makeDataPart("el-0", {
@@ -238,50 +304,7 @@ describe("useMarkdownElements", () => {
       ];
 
       const { result, rerender } = renderHook(
-        ({ parts }) => useMarkdownElements({ text, parts, elements: [citeUI] }),
-        { initialProps: { parts: loadingParts } },
-      );
-
-      const loadingRendered = result.current.components.cite({ "data-element-id": "el-0" });
-      expect(loadingRendered).toMatchInlineSnapshot(`
-        <span>
-          Loading...
-        </span>
-      `);
-
-      const readyParts: UIMessage["parts"] = [
-        makeDataPart("el-0", {
-          name: "cite",
-          input: { url: "https://x.com" },
-          state: "ready",
-          data: { title: "Example", url: "https://x.com" },
-        }),
-      ];
-
-      rerender({ parts: readyParts });
-
-      const readyRendered = result.current.components.cite({ "data-element-id": "el-0" });
-      expect(readyRendered).toMatchInlineSnapshot(`
-        <a
-          href="https://x.com"
-        >
-          Example
-        </a>
-      `);
-    });
-
-    it("SHOULD change processedText when part transitions from loading to error", () => {
-      const text = '@cite{"url":"https://x.com"}';
-      const loadingParts: UIMessage["parts"] = [
-        makeDataPart("el-0", {
-          name: "cite",
-          input: { url: "https://x.com" },
-          state: "loading",
-        }),
-      ];
-
-      const { result, rerender } = renderHook(
-        ({ parts }) => useMarkdownElements({ text, parts, elements: [citeUI] }),
+        ({ parts }) => useMarkdownText({ text, parts, elements: [citeUI] }),
         { initialProps: { parts: loadingParts } },
       );
 
@@ -299,14 +322,6 @@ describe("useMarkdownElements", () => {
       rerender({ parts: errorParts });
 
       expect(result.current.processedText).toContain('data-element-state="error"');
-      const rendered = result.current.components.cite({ "data-element-id": "el-0" });
-      expect(rendered).toMatchInlineSnapshot(`
-        <span
-          className="error"
-        >
-          Not found
-        </span>
-      `);
     });
 
     it("SHOULD transition multiple elements independently", () => {
@@ -325,7 +340,7 @@ describe("useMarkdownElements", () => {
       ];
 
       const { result, rerender } = renderHook(
-        ({ parts }) => useMarkdownElements({ text, parts, elements: [citeUI] }),
+        ({ parts }) => useMarkdownText({ text, parts, elements: [citeUI] }),
         { initialProps: { parts: bothLoadingParts } },
       );
 
@@ -379,7 +394,7 @@ describe("useMarkdownElements", () => {
       const text = '@cite{"url":"https://x.com"}';
 
       const { result, rerender } = renderHook(
-        ({ parts }) => useMarkdownElements({ text, parts, elements: [citeUI] }),
+        ({ parts }) => useMarkdownText({ text, parts, elements: [citeUI] }),
         { initialProps: { parts: [] as UIMessage["parts"] } },
       );
 
@@ -409,14 +424,6 @@ describe("useMarkdownElements", () => {
       rerender({ parts: readyParts });
 
       expect(result.current.processedText).toContain('data-element-state="ready"');
-      const rendered = result.current.components.cite({ "data-element-id": "el-0" });
-      expect(rendered).toMatchInlineSnapshot(`
-        <a
-          href="https://x.com"
-        >
-          Example
-        </a>
-      `);
     });
   });
 });

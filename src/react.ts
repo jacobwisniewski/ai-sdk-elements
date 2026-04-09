@@ -1,4 +1,6 @@
-export { useMarkdownElements } from "./react-markdown/create-markdown-elements";
+export { createMarkdownRegistry, useMarkdownText } from "./react-markdown/create-markdown-elements";
+
+export { ElementPartsProvider, useElementParts } from "./react-markdown/element-parts-context";
 
 export { defineElementUI } from "./core/define-element-ui";
 

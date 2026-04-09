@@ -24,6 +24,7 @@ describe("generateElementPrompt", () => {
         url: z.string().describe("The URL to cite"),
         title: z.string().describe("Display title"),
       }),
+      example: { url: "https://example.com", title: "Example" },
       enrich: async (input) => input,
     });
 
@@ -51,12 +52,14 @@ describe("generateElementPrompt", () => {
         name: "cite",
         description: "Citation",
         schema: z.object({ url: z.string() }),
+        example: { url: "https://example.com" },
         enrich: async (input) => input,
       }),
       defineElement({
         name: "map",
         description: "Map display",
         schema: z.object({ lat: z.number(), lng: z.number() }),
+        example: { lat: 0, lng: 0 },
         enrich: async (input) => input,
       }),
     ];
@@ -96,6 +99,7 @@ describe("generateElementPrompt", () => {
         level: z.enum(["info", "warn", "error"]),
         name: z.string().min(1).max(100),
       }),
+      example: { level: "info", name: "Test" },
       enrich: async (input) => input,
     });
 
@@ -122,6 +126,7 @@ describe("generateElementPrompt", () => {
       name: "test",
       description: "Test",
       schema: z.object({ a: z.string() }),
+      example: { a: "test" },
       enrich: async (input) => input,
     });
 
@@ -136,6 +141,7 @@ describe("generateElementPrompt", () => {
       name: "weather",
       description: "Display current weather",
       schema: z.object({ city: z.string() }),
+      example: { city: "Melbourne" },
       outputSchema: z.object({
         temperature: z.number(),
         condition: z.string(),
@@ -171,6 +177,7 @@ describe("generateElementPrompt", () => {
       name: "cite",
       description: "Citation",
       schema: z.object({ url: z.string() }),
+      example: { url: "https://example.com" },
       enrich: async (input) => input,
     });
 
@@ -183,6 +190,7 @@ describe("generateElementPrompt", () => {
       name: "test",
       description: "Test",
       schema: z.object({ a: z.string() }),
+      example: { a: "test" },
       outputSchema: z.object({ b: z.number() }),
       enrich: async () => ({ b: 1 }),
     });

@@ -10,6 +10,7 @@ export interface ElementDefinition<
   name: TName;
   description: string;
   schema: TInput;
+  example: z.infer<TInput>;
   outputSchema?: TOutput;
   enrich: (
     input: z.infer<TInput>,
@@ -17,18 +18,20 @@ export interface ElementDefinition<
   ) => Promise<z.infer<TOutput>>;
 }
 
-export type ElementUIState<TOutput> =
-  | { state: "loading"; input: Record<string, unknown> }
-  | { state: "error"; input: Record<string, unknown>; errorText: string }
-  | { state: "ready"; input: Record<string, unknown>; output: TOutput };
+export type ElementUIState<TInput, TOutput> =
+  | { state: "loading"; input: z.infer<TInput> }
+  | { state: "error"; input: z.infer<TInput>; errorText: string }
+  | { state: "ready"; input: z.infer<TInput>; output: TOutput };
 
 export interface ElementUIDefinition<
   TName extends string = string,
+  TInput extends z.ZodType = z.ZodType,
   TOutput extends z.ZodType = z.ZodType,
 > {
   name: TName;
+  inputSchema: TInput;
   outputSchema: TOutput;
-  render: (state: ElementUIState<z.infer<TOutput>>) => ReactNode;
+  render: (state: ElementUIState<z.infer<TInput>, z.infer<TOutput>>) => ReactNode;
 }
 
 export interface MarkerMatch {
@@ -80,4 +83,25 @@ export type AnyElementDefinition = ElementDefinition<
   z.ZodType<Record<string, unknown>>
 >;
 
-export type AnyElementUIDefinition = ElementUIDefinition<string, z.ZodType>;
+export type AnyElementUIDefinition = ElementUIDefinition<string, z.ZodType, z.ZodType>;
+
+export type ElementDataPartFromDefinition<T extends ElementUIDefinition> =
+  T extends ElementUIDefinition<infer TName, infer TInput, infer TOutput>
+    ?
+        | { name: TName; state: "loading"; input: z.infer<TInput> }
+        | { name: TName; state: "ready"; input: z.infer<TInput>; data: z.infer<TOutput> }
+        | { name: TName; state: "error"; input: z.infer<TInput>; error: string }
+    : never;
+
+export type ElementPartFromDefinition<T extends ElementUIDefinition> =
+  T extends ElementUIDefinition<infer TName, infer TInput, infer TOutput>
+    ?
+        | { type: `element-${TName}`; state: "loading"; input: z.infer<TInput> }
+        | {
+            type: `element-${TName}`;
+            state: "ready";
+            input: z.infer<TInput>;
+            output: z.infer<TOutput>;
+          }
+        | { type: `element-${TName}`; state: "error"; input: z.infer<TInput>; errorText: string }
+    : never;
