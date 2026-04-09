@@ -16,6 +16,9 @@ const collectMatches = (text: string, regex: RegExp): ReadonlyArray<RegExpExecAr
   return [result, ...collectMatches(text, regex)];
 };
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
 export const findMarkers = (text: string): ReadonlyArray<MarkerMatch> =>
   collectMatches(text, /@(\w+)\{/g).reduce<ReadonlyArray<MarkerMatch>>((acc, match) => {
     const name = match[1];
@@ -43,11 +46,13 @@ export const parseMarker = (
   if (!element) return null;
 
   try {
-    const parsed = JSON.parse(match.rawInput) as Record<string, unknown>;
+    const parsed: unknown = JSON.parse(match.rawInput);
+    if (!isRecord(parsed)) return null;
+
     const result = element.schema.safeParse(parsed);
     if (!result.success) return null;
 
-    return { ...match, input: result.data as Record<string, unknown> };
+    return { ...match, input: parsed };
   } catch {
     return null;
   }

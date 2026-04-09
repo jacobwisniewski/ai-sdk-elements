@@ -12,6 +12,7 @@ const citeElement = defineElement({
   name: "cite",
   description: "Citation",
   schema: z.object({ url: z.string() }),
+  example: { url: "https://example.com" },
   enrich: async (input) => ({ title: "Test Title", url: input.url }),
 });
 
@@ -19,6 +20,7 @@ const failElement = defineElement({
   name: "fail",
   description: "Always fails",
   schema: z.object({ id: z.string() }),
+  example: { id: "123" },
   enrich: async () => {
     throw new Error("enrich failed");
   },
@@ -114,6 +116,7 @@ describe("createStreamProcessor", () => {
         name: "map",
         description: "Map",
         schema: z.object({ lat: z.number(), lng: z.number() }),
+        example: { lat: 0, lng: 0 },
         enrich: async (input) => input,
       });
 
@@ -215,6 +218,7 @@ describe("createStreamProcessor", () => {
         name: "cite",
         description: "Slow citation",
         schema: z.object({ url: z.string() }),
+        example: { url: "https://slow.com" },
         enrich: async (input) => {
           await new Promise((resolve) => setTimeout(resolve, 100));
           return { title: "Slow Result", url: input.url };
@@ -262,6 +266,7 @@ describe("createStreamProcessor", () => {
         name: "cite",
         description: "Abort aware",
         schema: z.object({ url: z.string() }),
+        example: { url: "https://x.com" },
         enrich: async (input, options) => {
           if (options) observedSignals.push(options.abortSignal);
           return { title: "ok", url: input.url };

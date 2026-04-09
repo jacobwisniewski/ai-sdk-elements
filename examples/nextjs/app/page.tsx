@@ -2,7 +2,7 @@
 
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
-import { useMarkdownElements } from "ai-sdk-elements/react/streamdown";
+import { createMarkdownRegistry, useMarkdownText } from "ai-sdk-elements/react";
 import { Streamdown } from "streamdown";
 import "streamdown/styles.css";
 import { elementUIs } from "@/lib/elements-ui";
@@ -14,6 +14,8 @@ const getText = (parts: UIMessage["parts"]): string =>
     .map((p) => p.text)
     .join("");
 
+const elementsRegistry = createMarkdownRegistry(elementUIs);
+
 const Message = ({
   role,
   parts,
@@ -23,7 +25,7 @@ const Message = ({
   parts: UIMessage["parts"];
   isStreaming: boolean;
 }) => {
-  const { processedText, components, elementNames, hasLoadingElements } = useMarkdownElements({
+  const { processedText, elementNames, hasLoadingElements } = useMarkdownText({
     text: getText(parts),
     parts,
     elements: elementUIs,
@@ -42,15 +44,17 @@ const Message = ({
   return (
     <div className="flex justify-start">
       <div className="max-w-[80%] rounded-2xl bg-zinc-100 px-4 py-2.5 text-zinc-900">
-        <Streamdown
-          isAnimating={isStreaming || hasLoadingElements}
-          allowedTags={Object.fromEntries(
-            elementNames.map((name) => [name, ["dataElementId", "dataElementState"]]),
-          )}
-          components={components}
-        >
-          {processedText}
-        </Streamdown>
+        <elementsRegistry.ElementsProvider parts={parts}>
+          <Streamdown
+            isAnimating={isStreaming || hasLoadingElements}
+            allowedTags={Object.fromEntries(
+              elementNames.map((name) => [name, ["dataElementId", "dataElementState"]]),
+            )}
+            components={elementsRegistry.components}
+          >
+            {processedText}
+          </Streamdown>
+        </elementsRegistry.ElementsProvider>
       </div>
     </div>
   );

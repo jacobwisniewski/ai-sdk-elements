@@ -2,6 +2,10 @@ import { z } from "zod";
 import { defineElement } from "ai-sdk-elements";
 import { fetchWeather } from "@/lib/weather-api";
 
+export const weatherInputSchema = z.object({
+  city: z.string(),
+});
+
 export const weatherOutputSchema = z.object({
   city: z.string(),
   country: z.string(),
@@ -14,9 +18,8 @@ export const weatherOutputSchema = z.object({
 export const weatherElement = defineElement({
   name: "weather",
   description: "Display current weather for a city",
-  schema: z.object({
-    city: z.string(),
-  }),
+  schema: weatherInputSchema,
+  example: { city: "Melbourne" },
   outputSchema: weatherOutputSchema,
   enrich: async (input) => fetchWeather(input.city),
 });
